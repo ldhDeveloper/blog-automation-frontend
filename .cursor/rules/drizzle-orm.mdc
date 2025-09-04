@@ -1,0 +1,190 @@
+---
+description: Drizzle ORM 스키마 정의, 쿼리 작성, 마이그레이션 가이드라인
+globs: backend/src/infrastructure/database/schema/*.ts, backend/drizzle.config.ts, backend/src/infrastructure/database/migrations/*.sql
+alwaysApply: true
+---
+
+- **스키마 정의 규칙**
+  ```typescript
+  // ✅ DO: 명시적 타입과 제약 조건
+  export const users = pgTable('users', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: varchar('email', { length: 255 }).notNull().unique(),
+    name: varchar('name', { length: 255 }),
+    isActive: boolean('is_active').default(true).notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  });
+  
+  // ✅ DO: 타입 추론 활용
+  export type User = typeof users.$inferSelect;
+  export type NewUser = typeof users.$inferInsert;
+  
+  // ❌ DON'T: 제약 조건 없는 스키마
+  export const users = pgTable('users', {
+    id: uuid('id'),
+    email: varchar('email'),
+  });
+  ```
+
+- **관계 정의**
+  ```typescript
+  // ✅ DO: 외래 키와 관계 설정
+  export const content = pgTable('content', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    title: varchar('title', { length: 255 }).notNull(),
+    status: contentStatusEnum('status').default('draft').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  });
+  
+  // ✅ DO: 관계 정의
+  export const usersRelations = relations(users, ({ many }) => ({
+    contents: many(content),
+  }));
+  
+  export const contentRelations = relations(content, ({ one }) => ({
+    user: one(users, {
+      fields: [content.userId],
+      references: [users.id],
+    }),
+  }));
+  ```
+
+- **쿼리 작성 패턴**
+  ```typescript
+  // ✅ DO: 타입 안전한 쿼리
+  @Injectable()
+  export class ContentRepository {
+    constructor(private readonly drizzle: DrizzleService) {}
+    
+    async findByUserId(userId: string): Promise<Content[]> {
+      return await this.drizzle.db
+        .select()
+        .from(content)
+        .where(eq(content.userId, userId))
+        .orderBy(desc(content.createdAt));
+    }
+    
+    async findWithUser(contentId: string): Promise<ContentWithUser | null> {
+      const result = await this.drizzle.db
+        .select({
+          content: content,
+          user: {
+            id: users.id,
+            name: users.name,
+            email: users.email,
+          },
+        })
+        .from(content)
+        .leftJoin(users, eq(content.userId, users.id))
+        .where(eq(content.id, contentId))
+        .limit(1);
+        
+      return result[0] || null;
+    }
+  }
+  
+  // ❌ DON'T: Raw SQL 쿼리 (타입 안전성 상실)
+  async findByUserId(userId: string) {
+    return await this.drizzle.db.execute(
+      `SELECT * FROM content WHERE user_id = '${userId}'`
+    );
+  }
+  ```
+
+- **트랜잭션 처리**
+  ```typescript
+  // ✅ DO: 트랜잭션을 사용한 데이터 일관성 보장
+  async createContentWithMetadata(
+    contentData: NewContent,
+    metadataData: NewContentMetadata
+  ): Promise<void> {
+    await this.drizzle.db.transaction(async (tx) => {
+      const [createdContent] = await tx
+        .insert(content)
+        .values(contentData)
+        .returning();
+        
+      await tx
+        .insert(contentMetadata)
+        .values({
+          ...metadataData,
+          contentId: createdContent.id,
+        });
+    });
+  }
+  ```
+
+- **마이그레이션 관리**
+  ```typescript
+  // ✅ DO: [drizzle.config.ts](mdc:backend/drizzle.config.ts) 설정 준수
+  export default {
+    schema: './src/infrastructure/database/schema/*.ts',
+    out: './src/infrastructure/database/migrations',
+    dialect: 'postgresql',
+    dbCredentials: {
+      url: process.env.DATABASE_URL!,
+    },
+  } satisfies Config;
+  ```
+
+- **스키마 인덱스 및 성능 최적화**
+  ```typescript
+  // ✅ DO: 자주 쿼리되는 필드에 인덱스 추가
+  export const content = pgTable('content', {
+    // ... 다른 필드들
+    userId: uuid('user_id').notNull(),
+    status: contentStatusEnum('status').default('draft'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  }, (table) => ({
+    userIdIdx: index('content_user_id_idx').on(table.userId),
+    statusIdx: index('content_status_idx').on(table.status),
+    createdAtIdx: index('content_created_at_idx').on(table.createdAt),
+  }));
+  ```
+
+- **데이터 검증 및 제약 조건**
+  ```typescript
+  // ✅ DO: 데이터베이스 레벨 제약 조건
+  export const users = pgTable('users', {
+    id: uuid('id').primaryKey().defaultRandom(),
+    email: varchar('email', { length: 255 })
+      .notNull()
+      .unique()
+      .check(sql`email ~ '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$'`),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  }, (table) => ({
+    emailUniqueIdx: uniqueIndex('users_email_unique_idx').on(table.email),
+  }));
+  ```
+
+- **Enum 사용 규칙**
+  ```typescript
+  // ✅ DO: PostgreSQL enum 활용
+  export const contentStatusEnum = pgEnum('content_status', [
+    'draft',
+    'generating',
+    'ready',
+    'published',
+    'failed'
+  ]);
+  
+  // ✅ DO: TypeScript enum과 동기화
+  export enum ContentStatus {
+    DRAFT = 'draft',
+    GENERATING = 'generating',
+    READY = 'ready',
+    PUBLISHED = 'published',
+    FAILED = 'failed',
+  }
+  ```
+
+- **마이그레이션 스크립트 관리**
+  - `npm run db:generate` - 스키마 변경 사항으로부터 마이그레이션 생성
+  - `npm run db:migrate` - 마이그레이션 실행
+  - `npm run db:push` - 개발 환경에서 스키마 직접 푸시
+  - 프로덕션에서는 반드시 마이그레이션 사용

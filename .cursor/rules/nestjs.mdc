@@ -1,0 +1,95 @@
+---
+description: NestJS 백엔드 개발 가이드라인 및 모범 사례
+globs: backend/src/**/*.ts
+alwaysApply: true
+---
+
+- **모듈 구조**
+  - 기능별로 모듈 분리: `UserModule`, `ContentModule`, `AuthModule`
+  - 전역 모듈은 `@Global()` 데코레이터 사용
+  - [app.module.ts](mdc:backend/src/app.module.ts) 참조하여 모듈 등록
+
+- **컨트롤러 작성 규칙**
+  ```typescript
+  // ✅ DO: 명시적 DTO와 응답 타입 정의
+  @Controller('content')
+  export class ContentController {
+    constructor(private readonly contentService: ContentService) {}
+    
+    @Post()
+    @HttpCode(HttpStatus.CREATED)
+    async createContent(
+      @Body() createContentDto: CreateContentDto,
+      @Req() req: Request
+    ): Promise<ContentResponseDto> {
+      return this.contentService.create(createContentDto, req.user.id);
+    }
+  }
+  
+  // ❌ DON'T: any 타입이나 타입 없는 매개변수
+  @Post()
+  async createContent(@Body() data: any): Promise<any> {
+    return this.contentService.create(data);
+  }
+  ```
+
+- **서비스 레이어**
+  - 비즈니스 로직은 서비스에서 처리
+  - 의존성 주입을 통한 느슨한 결합
+  - 에러 처리는 NestJS 예외 필터 사용
+
+- **DTO 및 검증**
+  ```typescript
+  // ✅ DO: class-validator 사용한 DTO 검증
+  import { IsString, IsOptional, IsEnum } from 'class-validator';
+  
+  export class CreateContentDto {
+    @IsString()
+    title: string;
+    
+    @IsOptional()
+    @IsString()
+    description?: string;
+    
+    @IsEnum(ContentStatus)
+    status: ContentStatus;
+  }
+  ```
+
+- **예외 처리**
+  ```typescript
+  // ✅ DO: NestJS 예외 사용
+  if (!user) {
+    throw new NotFoundException('사용자를 찾을 수 없습니다');
+  }
+  
+  if (!hasPermission) {
+    throw new ForbiddenException('권한이 없습니다');
+  }
+  
+  // ❌ DON'T: 일반 Error 객체 사용
+  throw new Error('Something went wrong');
+  ```
+
+- **환경 변수 및 설정**
+  - [ConfigModule](mdc:backend/src/app.module.ts) 사용하여 환경 변수 관리
+  - `@nestjs/config`의 `ConfigService` 주입하여 사용
+  - 타입 안전한 설정 객체 정의
+
+- **가드 및 미들웨어**
+  ```typescript
+  // ✅ DO: 인증 가드 사용
+  @UseGuards(JwtAuthGuard)
+  @Controller('protected')
+  export class ProtectedController {
+    @Get()
+    getProtectedData(@Req() req: Request) {
+      return { userId: req.user.id };
+    }
+  }
+  ```
+
+- **로깅**
+  - NestJS 내장 Logger 사용
+  - 적절한 로그 레벨 설정 (error, warn, log, debug)
+  - 민감한 정보는 로그에 포함하지 않음

@@ -1,0 +1,131 @@
+---
+description: Context7 MCP를 통한 최신 라이브러리 문서 확인 및 활용 가이드라인
+globs: frontend/**/*.{ts,tsx,js,jsx}, backend/src/**/*.ts, **/*.{json,yaml,yml,md}
+alwaysApply: true
+---
+
+# Cursor Rules - Context7 MCP Integration
+
+## 작업 전 필수 사항
+작업을 시작하기 전에 반드시 다음을 수행하세요:
+
+1. **Context7 MCP를 통한 최신 문서 확인**
+   - 사용할 라이브러리/프레임워크의 최신 문서를 Context7 MCP를 통해 확인
+   - 버전별 차이점과 새로운 기능 확인
+   - 공식 문서의 모범 사례 및 권장사항 검토
+
+2. **라이브러리 문서 참조 우선순위**
+   ```
+   1순위: Context7 MCP를 통한 최신 공식 문서
+   2순위: 공식 GitHub 저장소
+   3순위: 공식 웹사이트 문서
+   ```
+
+## Context7 MCP 사용 가이드라인
+
+### 라이브러리 문서 확인 프로세스
+1. **라이브러리 ID 해결**
+   - `mcp_context7_resolve-library-id`를 사용하여 정확한 라이브러리 ID 확인
+   - 예: "react", "next.js", "tailwind" 등
+
+2. **문서 조회**
+   - `mcp_context7_get-library-docs`를 사용하여 관련 문서 조회
+   - 특정 토픽에 집중하여 필요한 부분만 조회
+   - 토큰 수를 적절히 조절 (기본: 10000)
+
+### 주요 확인 사항
+- **API 변경사항**: 최신 버전에서의 API 변경 확인
+- **새로운 기능**: 최근 추가된 기능이나 개선사항
+- **모범 사례**: 공식 문서에서 권장하는 사용 패턴
+- **설정 방법**: 최신 설정 옵션 및 구성 방법
+- **성능 최적화**: 공식적으로 권장되는 최적화 방법
+
+## 코딩 규칙
+
+### React 프로젝트
+- Context7을 통해 React 최신 문서 확인 후 작업
+- 함수형 컴포넌트와 Hooks 사용 우선
+- 최신 React 패턴 및 모범 사례 적용
+
+### Next.js 프로젝트
+- App Router 사용 시 최신 문서 필수 확인
+- 서버 컴포넌트 vs 클라이언트 컴포넌트 구분
+- 최신 API 라우트 및 미들웨어 패턴 적용
+
+### 스타일링
+- Tailwind CSS 사용 시 최신 유틸리티 클래스 확인
+- CSS-in-JS 라이브러리 사용 시 최신 API 확인
+
+## 작업 워크플로우
+
+1. **프로젝트 분석**
+   - 사용될 주요 라이브러리/프레임워크 식별
+   - Context7을 통해 각 라이브러리의 최신 문서 조회
+
+2. **설계 단계**
+   - 공식 문서의 권장 아키텍처 패턴 적용
+   - 최신 모범 사례를 반영한 구조 설계
+
+3. **구현 단계**
+   - 최신 API 및 기능 활용
+   - 공식 문서의 예제 코드 참조
+   - deprecation warning이 없는 최신 방식 사용
+
+4. **검증 단계**
+   - 공식 문서의 테스트 가이드라인 따름
+   - 최신 테스팅 도구 및 패턴 적용
+
+## 금지사항
+- Context7 확인 없이 오래된 정보나 추측에 기반한 코드 작성 금지
+- 공식 문서와 다른 비표준 패턴 사용 금지
+- deprecated된 API나 기능 사용 금지
+
+## 예시 MCP 도구 사용법
+
+```typescript
+// ✅ DO: 작업 시작 전 라이브러리 문서 확인
+// 1. 라이브러리 ID 확인
+await mcp_context7_resolve_library_id({ libraryName: "react" });
+await mcp_context7_resolve_library_id({ libraryName: "next.js" });
+
+// 2. 관련 문서 조회
+await mcp_context7_get_library_docs({ 
+  context7CompatibleLibraryID: "/facebook/react",
+  topic: "hooks",
+  tokens: 10000
+});
+
+await mcp_context7_get_library_docs({
+  context7CompatibleLibraryID: "/vercel/next.js",
+  topic: "app-router",
+  tokens: 10000
+});
+
+// ❌ DON'T: 문서 확인 없이 추측으로 코딩
+const component = () => {
+  // 추측에 기반한 오래된 패턴 사용
+}
+```
+
+## 프로젝트별 필수 확인 라이브러리
+
+### 프론트엔드 (Next.js)
+- **Next.js**: `/vercel/next.js` - App Router, SSR, 최적화
+- **React**: `/facebook/react` - Hooks, 컴포넌트 패턴
+- **Tailwind CSS**: 최신 유틸리티 클래스 및 설정
+- **shadcn/ui**: 컴포넌트 라이브러리 최신 API
+
+### 백엔드 (NestJS)
+- **NestJS**: 최신 데코레이터 및 모듈 패턴
+- **TypeScript**: 최신 타입 정의 및 기능
+- **Class Validator**: 최신 검증 데코레이터
+
+### 데이터베이스
+- **Drizzle ORM**: 최신 스키마 정의 및 쿼리 패턴
+- **Supabase**: 최신 클라이언트 API 및 보안 설정
+
+## 참고사항
+- Context7 MCP는 실시간으로 최신 문서를 제공합니다
+- 라이브러리 업데이트 시 반드시 새로운 문서를 확인하세요
+- 불확실한 부분은 Context7을 통해 추가 문서를 조회하세요
+- 이 규칙은 모든 코드 작성 전에 우선적으로 적용되어야 합니다

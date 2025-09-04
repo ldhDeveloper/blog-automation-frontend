@@ -1,0 +1,155 @@
+---
+description: 헥사고날 아키텍처 및 CQRS 패턴 구현 가이드라인
+globs: backend/src/**/*.ts
+alwaysApply: true
+---
+
+- **레이어 분리 및 의존성 방향**
+  - Domain ← Application ← Infrastructure
+  - Domain ← Application ← Interfaces
+  - Domain 레이어는 외부 의존성 없음
+  - [BaseEntity](mdc:backend/src/domain/entities/base.entity.ts) 참조
+
+- **Domain 레이어 (backend/src/domain/)**
+  ```typescript
+  // ✅ DO: 순수한 도메인 엔티티
+  export class Content extends BaseEntity {
+    constructor(
+      id: string,
+      private readonly title: string,
+      private readonly description: string,
+      private readonly status: ContentStatus,
+      createdAt?: Date,
+      updatedAt?: Date
+    ) {
+      super(id, createdAt, updatedAt);
+    }
+    
+    // 비즈니스 로직 메서드
+    publish(): void {
+      if (this.status !== ContentStatus.READY) {
+        throw new Error('준비되지 않은 콘텐츠는 게시할 수 없습니다');
+      }
+      // 게시 로직
+    }
+  }
+  
+  // ❌ DON'T: 인프라 의존성 포함
+  export class Content {
+    async save() {
+      await database.save(this); // 인프라 의존성
+    }
+  }
+  ```
+
+- **Application 레이어 - CQRS 패턴**
+  ```typescript
+  // ✅ DO: Command 구현
+  export class CreateContentCommand extends BaseCommand {
+    constructor(
+      public readonly title: string,
+      public readonly description: string,
+      public readonly userId: string
+    ) {
+      super();
+    }
+  }
+  
+  @CommandHandler(CreateContentCommand)
+  export class CreateContentHandler implements ICommandHandler<CreateContentCommand> {
+    constructor(
+      private readonly contentRepository: ContentRepository,
+      private readonly eventBus: EventBus
+    ) {}
+    
+    async execute(command: CreateContentCommand): Promise<void> {
+      const content = new Content(
+        new Id().getValue(),
+        command.title,
+        command.description,
+        ContentStatus.DRAFT
+      );
+      
+      await this.contentRepository.save(content);
+      await this.eventBus.publish(new ContentCreatedEvent(content.id));
+    }
+  }
+  ```
+
+- **Query 구현**
+  ```typescript
+  // ✅ DO: Query 패턴
+  export class GetContentQuery extends BaseQuery {
+    constructor(public readonly contentId: string) {
+      super();
+    }
+  }
+  
+  @QueryHandler(GetContentQuery)
+  export class GetContentHandler implements IQueryHandler<GetContentQuery> {
+    constructor(private readonly contentReadRepository: ContentReadRepository) {}
+    
+    async execute(query: GetContentQuery): Promise<ContentResponseDto> {
+      const content = await this.contentReadRepository.findById(query.contentId);
+      if (!content) {
+        throw new NotFoundException('콘텐츠를 찾을 수 없습니다');
+      }
+      return new ContentResponseDto(content);
+    }
+  }
+  ```
+
+- **Infrastructure 레이어 (backend/src/infrastructure/)**
+  - 데이터베이스, 외부 API, 메시징 시스템 등 구현
+  - Repository 인터페이스의 구체적 구현
+  - [DrizzleService](mdc:backend/src/infrastructure/database/drizzle.service.ts) 참조
+
+- **Interfaces 레이어 (backend/src/interfaces/)**
+  - HTTP 컨트롤러, GraphQL 리졸버 등
+  - 외부 세계와의 접점
+  - DTO 변환 및 입력 검증
+
+- **포트와 어댑터 패턴**
+  ```typescript
+  // ✅ DO: 포트(인터페이스) 정의
+  export interface ContentRepository {
+    save(content: Content): Promise<void>;
+    findById(id: string): Promise<Content | null>;
+    findByUserId(userId: string): Promise<Content[]>;
+  }
+  
+  // ✅ DO: 어댑터(구현체)
+  @Injectable()
+  export class DrizzleContentRepository implements ContentRepository {
+    constructor(private readonly drizzle: DrizzleService) {}
+    
+    async save(content: Content): Promise<void> {
+      // Drizzle ORM을 사용한 구현
+    }
+  }
+  ```
+
+- **이벤트 기반 아키텍처**
+  ```typescript
+  // ✅ DO: 도메인 이벤트 정의
+  export class ContentCreatedEvent {
+    constructor(
+      public readonly contentId: string,
+      public readonly userId: string,
+      public readonly timestamp: Date = new Date()
+    ) {}
+  }
+  
+  // ✅ DO: 이벤트 핸들러
+  @EventsHandler(ContentCreatedEvent)
+  export class ContentCreatedHandler implements IEventHandler<ContentCreatedEvent> {
+    async handle(event: ContentCreatedEvent) {
+      // 이벤트 처리 로직 (알림, 통계 등)
+    }
+  }
+  ```
+
+- **의존성 주입 규칙**
+  - 인터페이스에 의존하고 구체 구현에 의존하지 않음
+  - 생성자 주입 사용
+  - 순환 의존성 방지

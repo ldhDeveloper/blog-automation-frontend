@@ -1,0 +1,305 @@
+---
+description: 블로그 자동화 서버 보안 및 성능 최적화 가이드라인
+globs: frontend/**/*.{ts,tsx}, backend/src/**/*.ts
+alwaysApply: true
+---
+
+- **인증 및 인가 보안**
+  ```typescript
+  // ✅ DO: JWT 토큰 검증 미들웨어
+  @Injectable()
+  export class JwtAuthGuard implements CanActivate {
+    constructor(private jwtService: JwtService) {}
+    
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+      const request = context.switchToHttp().getRequest();
+      const token = this.extractTokenFromHeader(request);
+      
+      if (!token) {
+        throw new UnauthorizedException('토큰이 없습니다');
+      }
+      
+      try {
+        const payload = await this.jwtService.verifyAsync(token);
+        request['user'] = payload;
+      } catch {
+        throw new UnauthorizedException('유효하지 않은 토큰입니다');
+      }
+      
+      return true;
+    }
+  }
+  
+  // ❌ DON'T: 인증 없는 민감한 엔드포인트
+  @Get('/admin/users')
+  async getAllUsers() {
+    return this.userService.findAll(); // 보안 위험
+  }
+  ```
+
+- **입력 데이터 검증 및 살균화**
+  ```typescript
+  // ✅ DO: DTO 검증과 변환
+  export class CreateContentDto {
+    @IsString()
+    @Length(1, 255)
+    @Transform(({ value }) => value.trim())
+    title: string;
+    
+    @IsOptional()
+    @IsString()
+    @MaxLength(1000)
+    @Transform(({ value }) => value?.trim())
+    description?: string;
+    
+    @IsEnum(ContentStatus)
+    status: ContentStatus;
+  }
+  
+  // ✅ DO: HTML 살균화 (XSS 방지)
+  import { sanitizeHtml } from 'sanitize-html';
+  
+  @Transform(({ value }) => sanitizeHtml(value, {
+    allowedTags: ['p', 'br', 'strong', 'em'],
+    allowedAttributes: {},
+  }))
+  content: string;
+  ```
+
+- **Rate Limiting 및 DDoS 방지**
+  ```typescript
+  // ✅ DO: API Rate Limiting 적용
+  @Controller('api/content')
+  @UseGuards(JwtAuthGuard)
+  export class ContentController {
+    @Post()
+    @Throttle({ default: { limit: 10, ttl: 60000 } }) // 1분당 10회
+    async createContent(@Body() dto: CreateContentDto) {
+      return this.contentService.create(dto);
+    }
+    
+    @Get()
+    @Throttle({ default: { limit: 100, ttl: 60000 } }) // 1분당 100회
+    async getContents() {
+      return this.contentService.findAll();
+    }
+  }
+  ```
+
+- **데이터베이스 성능 최적화**
+  ```typescript
+  // ✅ DO: 페이지네이션 구현
+  export class ContentService {
+    async findPaginated(
+      page: number = 1,
+      limit: number = 20
+    ): Promise<PaginatedResult<Content>> {
+      const offset = (page - 1) * limit;
+      
+      const [contents, total] = await Promise.all([
+        this.drizzle.db
+          .select()
+          .from(content)
+          .limit(limit)
+          .offset(offset)
+          .orderBy(desc(content.createdAt)),
+        this.drizzle.db
+          .select({ count: count() })
+          .from(content)
+      ]);
+      
+      return {
+        data: contents,
+        pagination: {
+          page,
+          limit,
+          total: total[0].count,
+          totalPages: Math.ceil(total[0].count / limit),
+        },
+      };
+    }
+  }
+  
+  // ❌ DON'T: 대용량 데이터 한 번에 조회
+  async findAll() {
+    return await this.drizzle.db.select().from(content); // 성능 위험
+  }
+  ```
+
+- **캐싱 전략**
+  ```typescript
+  // ✅ DO: Redis 캐싱 활용
+  @Injectable()
+  export class ContentService {
+    constructor(
+      private readonly cacheManager: Cache,
+      private readonly contentRepository: ContentRepository
+    ) {}
+    
+    async findById(id: string): Promise<Content | null> {
+      const cacheKey = `content:${id}`;
+      
+      // 캐시에서 확인
+      let content = await this.cacheManager.get<Content>(cacheKey);
+      
+      if (!content) {
+        // 데이터베이스에서 조회
+        content = await this.contentRepository.findById(id);
+        
+        if (content) {
+          // 5분 캐싱
+          await this.cacheManager.set(cacheKey, content, 300000);
+        }
+      }
+      
+      return content;
+    }
+  }
+  ```
+
+- **프론트엔드 성능 최적화**
+  ```tsx
+  // ✅ DO: React.memo와 useMemo 활용
+  interface ContentListProps {
+    contents: Content[];
+    onContentClick: (id: string) => void;
+  }
+  
+  export const ContentList = React.memo(({ contents, onContentClick }: ContentListProps) => {
+    const sortedContents = useMemo(
+      () => contents.sort((a, b) => 
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+      [contents]
+    );
+    
+    const handleClick = useCallback((id: string) => {
+      onContentClick(id);
+    }, [onContentClick]);
+    
+    return (
+      <div>
+        {sortedContents.map(content => (
+          <ContentCard 
+            key={content.id} 
+            content={content} 
+            onClick={handleClick}
+          />
+        ))}
+      </div>
+    );
+  });
+  
+  // ❌ DON'T: 불필요한 리렌더링
+  export function ContentList({ contents, onContentClick }) {
+    return (
+      <div>
+        {contents.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+          .map(content => (
+            <ContentCard 
+              key={content.id} 
+              content={content} 
+              onClick={() => onContentClick(content.id)}
+            />
+          ))}
+      </div>
+    );
+  }
+  ```
+
+- **이미지 및 파일 최적화**
+  ```tsx
+  // ✅ DO: Next.js Image 컴포넌트 사용
+  import Image from 'next/image';
+  
+  export function ContentThumbnail({ src, alt }: { src: string; alt: string }) {
+    return (
+      <Image
+        src={src}
+        alt={alt}
+        width={300}
+        height={200}
+        placeholder="blur"
+        blurDataURL="data:image/jpeg;base64,..."
+        className="rounded-lg object-cover"
+      />
+    );
+  }
+  
+  // ❌ DON'T: 일반 img 태그 사용
+  export function ContentThumbnail({ src, alt }) {
+    return <img src={src} alt={alt} />;
+  }
+  ```
+
+- **환경 변수 및 설정 보안**
+  ```typescript
+  // ✅ DO: 환경별 설정 분리
+  interface AppConfig {
+    port: number;
+    database: {
+      url: string;
+    };
+    jwt: {
+      secret: string;
+      expiresIn: string;
+    };
+    supabase: {
+      url: string;
+      serviceRoleKey: string;
+    };
+  }
+  
+  export const getConfig = (): AppConfig => ({
+    port: parseInt(process.env.PORT || '3001'),
+    database: {
+      url: process.env.DATABASE_URL!,
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET!,
+      expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+    },
+    supabase: {
+      url: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    },
+  });
+  
+  // ❌ DON'T: 하드코딩된 보안 정보
+  const jwtSecret = 'my-secret-key'; // 보안 위험
+  ```
+
+- **로깅 및 모니터링**
+  ```typescript
+  // ✅ DO: 구조화된 로깅
+  @Injectable()
+  export class ContentService {
+    private readonly logger = new Logger(ContentService.name);
+    
+    async createContent(dto: CreateContentDto, userId: string): Promise<Content> {
+      this.logger.log(`Creating content for user ${userId}`, {
+        userId,
+        title: dto.title,
+        timestamp: new Date().toISOString(),
+      });
+      
+      try {
+        const content = await this.contentRepository.create(dto, userId);
+        
+        this.logger.log(`Content created successfully`, {
+          contentId: content.id,
+          userId,
+        });
+        
+        return content;
+      } catch (error) {
+        this.logger.error(`Failed to create content`, {
+          userId,
+          error: error.message,
+          stack: error.stack,
+        });
+        throw error;
+      }
+    }
+  }
+  ```
