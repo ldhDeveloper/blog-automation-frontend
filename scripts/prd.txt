@@ -1,0 +1,19 @@
+PRD ̶ Frontend (Next.js + React + TypeScript + shadcn/ui)
+Purpose: Provide a web UI for users to create, monitor, and manage blog automation pipelines.
+Scope: Dashboard, authentication integration (Supabase Auth), post/job views, channel management, media uploads
+(Presigned URL), settings/notifications.
+1. Tech Stack & Structure
+Next.js(App Router), React 18, TypeScript, shadcn/ui, React Query, Zod.
+Networking: fetch/ky wrapper with 401 interceptor, shared DTOs (/packages/sdk).
+2. Authentication & Authorization
+Use Supabase Auth session, send Access Token in Authorization header.
+Workspace switching, roles: owner/admin/member.
+3. Main Screens
+Dashboard, post list/detail (timeline/SSE), post creation, channel management, workspace/members, settings.
+4. UX Requirements
+Show progress with SSE (steps: ideate→draft→image→seo→publish), display failure reason.
+Presigned URL uploads, accessibility and responsive design support.
+5. API Contracts (Summary)
+POST /posts, GET /posts/:id, POST /jobs/:id/retry, GET/POST/PATCH /channels, SSE /posts/:id/stream
+6. Non-functional
+Performance optimization, error/user logging, testing (Vitest/RTL, Playwright).

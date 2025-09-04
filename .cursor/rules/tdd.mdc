@@ -1,0 +1,361 @@
+---
+description: TDD(Test-Driven Development) 개발 방법론 및 테스트 우선 개발 규칙
+globs: **/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# TDD (Test-Driven Development) 규칙
+
+## 🔴 Red-Green-Refactor 사이클
+
+모든 코드 작성은 다음 TDD 사이클을 엄격히 준수해야 합니다:
+
+### 1. 🔴 Red (실패하는 테스트 작성)
+```typescript
+// ✅ DO: 먼저 실패하는 테스트를 작성
+describe('UserService', () => {
+  it('should create a new user with valid data', async () => {
+    // Given
+    const userData = {
+      email: 'test@example.com',
+      name: 'Test User',
+    };
+
+    // When
+    const result = await userService.createUser(userData);
+
+    // Then
+    expect(result).toMatchObject({
+      id: expect.any(String),
+      email: 'test@example.com',
+      name: 'Test User',
+    });
+  });
+});
+
+// ❌ DON'T: 테스트 없이 코드부터 작성
+export class UserService {
+  async createUser(data: CreateUserDto) {
+    // 구현...
+  }
+}
+```
+
+### 2. 🟢 Green (최소한의 코드로 테스트 통과)
+```typescript
+// ✅ DO: 테스트를 통과하는 최소한의 코드
+export class UserService {
+  async createUser(data: CreateUserDto): Promise<User> {
+    return {
+      id: '1',
+      email: data.email,
+      name: data.name,
+      createdAt: new Date().toISOString(),
+    };
+  }
+}
+```
+
+### 3. 🔵 Refactor (코드 개선)
+```typescript
+// ✅ DO: 테스트가 통과한 후 리팩토링
+export class UserService {
+  constructor(private userRepository: UserRepository) {}
+
+  async createUser(data: CreateUserDto): Promise<User> {
+    const user = new User({
+      id: generateId(),
+      email: data.email,
+      name: data.name,
+      createdAt: new Date(),
+    });
+    
+    return await this.userRepository.save(user);
+  }
+}
+```
+
+## 📋 테스트 작성 규칙
+
+### Given-When-Then 패턴 사용
+```typescript
+// ✅ DO: 명확한 Given-When-Then 구조
+describe('PostService', () => {
+  it('should publish a post when status is ready', async () => {
+    // Given - 테스트 조건 설정
+    const post = createMockPost({ status: 'ready' });
+    const mockPublishService = vi.fn().mockResolvedValue(true);
+    
+    // When - 테스트 대상 실행
+    const result = await postService.publish(post.id);
+    
+    // Then - 결과 검증
+    expect(result.status).toBe('published');
+    expect(mockPublishService).toHaveBeenCalledWith(post.id);
+  });
+});
+```
+
+### 테스트 네이밍 규칙
+```typescript
+// ✅ DO: 명확하고 설명적인 테스트 이름
+describe('Authentication', () => {
+  describe('login', () => {
+    it('should return user data when credentials are valid', () => {});
+    it('should throw error when email is invalid', () => {});
+    it('should throw error when password is incorrect', () => {});
+  });
+});
+
+// ❌ DON'T: 모호한 테스트 이름
+describe('test', () => {
+  it('works', () => {});
+  it('fails', () => {});
+});
+```
+
+## 🧪 테스트 유형별 규칙
+
+### Unit Tests (단위 테스트)
+```typescript
+// ✅ DO: 단일 함수/클래스의 동작 테스트
+describe('validateEmail', () => {
+  it('should return true for valid email format', () => {
+    expect(validateEmail('test@example.com')).toBe(true);
+  });
+  
+  it('should return false for invalid email format', () => {
+    expect(validateEmail('invalid-email')).toBe(false);
+  });
+});
+```
+
+### Integration Tests (통합 테스트)
+```typescript
+// ✅ DO: 여러 모듈 간의 상호작용 테스트
+describe('PostCreationFlow', () => {
+  it('should create post and send notification', async () => {
+    // Given
+    const postData = { title: 'Test', content: 'Content' };
+    
+    // When
+    const post = await postService.create(postData);
+    
+    // Then
+    expect(post).toBeDefined();
+    expect(notificationService.sendCreatedNotification).toHaveBeenCalled();
+  });
+});
+```
+
+### Component Tests (컴포넌트 테스트)
+```typescript
+// ✅ DO: React 컴포넌트 동작 테스트
+describe('LoginForm', () => {
+  it('should call onSubmit with form data when submitted', async () => {
+    // Given
+    const mockOnSubmit = vi.fn();
+    render(<LoginForm onSubmit={mockOnSubmit} />);
+    
+    // When
+    await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.click(screen.getByRole('button', { name: /login/i }));
+    
+    // Then
+    expect(mockOnSubmit).toHaveBeenCalledWith({
+      email: 'test@example.com',
+      password: 'password123',
+    });
+  });
+});
+```
+
+## 🎯 TDD 모범 사례
+
+### 1. 테스트를 먼저 작성하고 실행하여 실패 확인
+```bash
+# ✅ DO: 테스트 실행으로 Red 상태 확인
+npm test -- --watch
+```
+
+### 2. 최소한의 코드로 테스트 통과
+```typescript
+// ✅ DO: 하드코딩이라도 테스트를 먼저 통과시키기
+function add(a: number, b: number): number {
+  return 4; // 테스트에서 add(2, 2) === 4를 검증한다면
+}
+
+// 이후 더 많은 테스트 추가하며 일반화
+```
+
+### 3. 한 번에 하나의 테스트만 작성
+```typescript
+// ✅ DO: 하나씩 차근차근
+it('should validate required fields', () => {
+  // 이 테스트만 통과시키기 위한 코드 작성
+});
+
+// 다음 테스트는 위 테스트가 통과한 후에 작성
+it('should validate email format', () => {
+  // 새로운 테스트
+});
+```
+
+## 🔧 Mock 및 Stub 사용 규칙
+
+### 외부 의존성 Mocking
+```typescript
+// ✅ DO: 외부 의존성을 Mock으로 격리
+describe('UserService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should save user to database', async () => {
+    // Given
+    const mockSave = vi.fn().mockResolvedValue({ id: '1' });
+    const userRepository = { save: mockSave };
+    const userService = new UserService(userRepository);
+    
+    // When
+    await userService.createUser({ email: 'test@example.com' });
+    
+    // Then
+    expect(mockSave).toHaveBeenCalledWith(
+      expect.objectContaining({ email: 'test@example.com' })
+    );
+  });
+});
+```
+
+### API 호출 Mocking
+```typescript
+// ✅ DO: API 호출을 Mock으로 테스트
+describe('fetchUserData', () => {
+  it('should return user data on successful API call', async () => {
+    // Given
+    const mockUser = { id: '1', name: 'Test User' };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue(mockUser),
+    });
+    
+    // When
+    const result = await fetchUserData('1');
+    
+    // Then
+    expect(result).toEqual(mockUser);
+    expect(fetch).toHaveBeenCalledWith('/api/users/1');
+  });
+});
+```
+
+## 📊 테스트 커버리지 규칙
+
+### 커버리지 목표
+- **Unit Tests**: 90% 이상
+- **Integration Tests**: 80% 이상
+- **E2E Tests**: 주요 사용자 플로우 100%
+
+### 커버리지 확인
+```bash
+# ✅ DO: 정기적으로 커버리지 확인
+npm run test:coverage
+```
+
+## 🚫 TDD 안티패턴
+
+### 1. 테스트 없이 코드 작성
+```typescript
+// ❌ DON'T: 구현부터 시작
+export function calculateTotal(items: Item[]): number {
+  return items.reduce((sum, item) => sum + item.price, 0);
+}
+
+// ✅ DO: 테스트부터 시작
+describe('calculateTotal', () => {
+  it('should return 0 for empty array', () => {
+    expect(calculateTotal([])).toBe(0);
+  });
+});
+```
+
+### 2. 테스트를 위한 테스트 작성
+```typescript
+// ❌ DON'T: 의미 없는 테스트
+it('should have a method called getName', () => {
+  expect(typeof user.getName).toBe('function');
+});
+
+// ✅ DO: 동작을 검증하는 테스트
+it('should return user name when getName is called', () => {
+  expect(user.getName()).toBe('John Doe');
+});
+```
+
+### 3. 복잡한 테스트 작성
+```typescript
+// ❌ DON'T: 여러 기능을 한 번에 테스트
+it('should handle complete user workflow', () => {
+  // 너무 많은 검증...
+});
+
+// ✅ DO: 단일 관심사 테스트
+it('should create user', () => {});
+it('should validate user', () => {});
+it('should save user', () => {});
+```
+
+## 📝 TDD 체크리스트
+
+### 새로운 기능 개발 시:
+- [ ] 요구사항을 이해하고 테스트 시나리오 작성
+- [ ] 실패하는 테스트 작성 (Red)
+- [ ] 테스트를 통과하는 최소 코드 작성 (Green)
+- [ ] 코드 품질 개선 (Refactor)
+- [ ] 모든 기존 테스트가 여전히 통과하는지 확인
+- [ ] 추가 엣지 케이스 테스트 작성
+
+### 버그 수정 시:
+- [ ] 버그를 재현하는 실패 테스트 작성
+- [ ] 테스트를 통과하도록 버그 수정
+- [ ] 관련 기능의 회귀 테스트 확인
+
+## 🛠️ 권장 도구
+
+- **Test Runner**: Vitest
+- **Assertion Library**: Vitest (built-in)
+- **Mocking**: vi (Vitest)
+- **React Testing**: @testing-library/react
+- **E2E Testing**: Playwright
+- **Coverage**: Vitest coverage
+
+## 💡 추가 가이드라인
+
+### 테스트 격리
+```typescript
+// ✅ DO: 각 테스트는 독립적이어야 함
+describe('UserService', () => {
+  beforeEach(() => {
+    // 각 테스트 전에 초기화
+    database.clear();
+    vi.clearAllMocks();
+  });
+});
+```
+
+### 테스트 데이터 관리
+```typescript
+// ✅ DO: 테스트 팩토리 함수 사용
+function createTestUser(overrides = {}) {
+  return {
+    id: '1',
+    email: 'test@example.com',
+    name: 'Test User',
+    ...overrides,
+  };
+}
+```
+
+이 TDD 규칙을 따르면 더 안정적이고 유지보수 가능한 코드를 작성할 수 있습니다.

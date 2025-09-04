@@ -44,3 +44,14 @@ next-env.d.ts
 
 # OS
 Thumbs.db
+
+# Additional logs
+logs
+*.log
+dev-debug.log
+
+# Taskmaster (should be included in git)
+# .taskmaster/ 
+
+# Vitest
+.vitest/ 
