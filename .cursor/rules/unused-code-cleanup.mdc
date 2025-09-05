@@ -1,0 +1,244 @@
+---
+description: 사용하지 않는 코드 제거 및 정리 규칙
+globs: src/**/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# 사용하지 않는 코드 제거 규칙
+
+## 🧹 자동 정리 규칙
+
+### TypeScript 컴파일러 규칙
+- **`noUnusedLocals: true`**: 사용하지 않는 지역 변수 감지
+- **`noUnusedParameters: true`**: 사용하지 않는 매개변수 감지
+- **`noImplicitAny: true`**: 암시적 any 타입 방지
+
+### ESLint 규칙
+```typescript
+// ✅ DO: 사용하지 않는 변수/매개변수 경고
+"@typescript-eslint/no-unused-vars": "warn",
+"@typescript-eslint/no-unused-imports": "error",
+"no-unused-vars": "off", // TypeScript 버전 사용
+
+// ✅ DO: 사용하지 않는 파일 감지
+"import/no-unused-modules": "error",
+"import/no-unresolved": "error",
+```
+
+## 📋 코드 작성 시 체크리스트
+
+### 1. 변수 및 함수
+```typescript
+// ❌ DON'T: 사용하지 않는 변수
+const unusedVariable = 'test';
+const result = processData();
+
+// ✅ DO: 사용하지 않는 변수 제거
+const result = processData();
+
+// ❌ DON'T: 사용하지 않는 매개변수
+function processData(data: string, unusedParam: number) {
+  return data.toUpperCase();
+}
+
+// ✅ DO: 언더스코어로 표시하거나 제거
+function processData(data: string, _unusedParam: number) {
+  return data.toUpperCase();
+}
+
+// 또는 매개변수 제거
+function processData(data: string) {
+  return data.toUpperCase();
+}
+```
+
+### 2. Import/Export 정리
+```typescript
+// ❌ DON'T: 사용하지 않는 import
+import { useState, useEffect, useCallback } from 'react';
+import { Button } from '@/components/ui';
+import { unusedFunction } from '@/utils/helpers';
+
+// ✅ DO: 필요한 것만 import
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui';
+```
+
+### 3. 타입 정의
+```typescript
+// ❌ DON'T: 사용하지 않는 타입
+interface UnusedInterface {
+  name: string;
+}
+
+type UnusedType = string;
+
+// ✅ DO: 사용하지 않는 타입 제거
+// 또는 실제로 사용하는 타입만 유지
+```
+
+### 4. 컴포넌트 및 함수
+```typescript
+// ❌ DON'T: 사용하지 않는 컴포넌트
+const UnusedComponent = () => {
+  return <div>Never used</div>;
+};
+
+// ✅ DO: 사용하지 않는 컴포넌트 제거
+// 또는 실제로 사용하는 컴포넌트만 유지
+```
+
+## 🔍 정기적인 코드 정리
+
+### 1. 자동 정리 도구 사용
+```bash
+# ESLint로 사용하지 않는 코드 감지
+npm run lint
+
+# TypeScript 컴파일러로 타입 오류 확인
+npx tsc --noEmit
+
+# 사용하지 않는 의존성 확인
+npm audit
+```
+
+### 2. 수동 정리 체크리스트
+- [ ] 사용하지 않는 import 문 제거
+- [ ] 사용하지 않는 변수/함수 제거
+- [ ] 사용하지 않는 타입 정의 제거
+- [ ] 사용하지 않는 컴포넌트 제거
+- [ ] 사용하지 않는 파일 제거
+- [ ] 사용하지 않는 의존성 제거
+
+### 3. 코드 리뷰 시 확인사항
+- [ ] 모든 import가 실제로 사용되는가?
+- [ ] 모든 변수가 참조되는가?
+- [ ] 모든 함수가 호출되는가?
+- [ ] 모든 타입이 사용되는가?
+- [ ] 모든 컴포넌트가 렌더링되는가?
+
+## 🛠️ 도구 설정
+
+### ESLint 설정
+```javascript
+// eslint.config.mjs
+{
+  rules: {
+    // 사용하지 않는 변수 경고
+    "@typescript-eslint/no-unused-vars": "warn",
+    
+    // 사용하지 않는 import 에러
+    "@typescript-eslint/no-unused-imports": "error",
+    
+    // 사용하지 않는 모듈 감지
+    "import/no-unused-modules": "error",
+    
+    // 사용하지 않는 파일 감지
+    "import/no-unresolved": "error",
+  }
+}
+```
+
+### TypeScript 설정
+```json
+// tsconfig.json
+{
+  "compilerOptions": {
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitAny": true,
+    "exactOptionalPropertyTypes": true
+  }
+}
+```
+
+### VSCode 설정
+```json
+// .vscode/settings.json
+{
+  "typescript.preferences.includePackageJsonAutoImports": "off",
+  "typescript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "editor.codeActionsOnSave": {
+    "source.organizeImports": true,
+    "source.removeUnusedImports": true
+  }
+}
+```
+
+## 🚫 주의사항
+
+### 1. 제거하면 안 되는 코드
+```typescript
+// ✅ DO: 유지해야 하는 코드
+// - 테스트 파일의 import
+import { render, screen } from '@testing-library/react';
+
+// - 타입 정의 파일의 export
+export interface User {
+  id: string;
+  name: string;
+}
+
+// - 라이브러리에서 필요한 import
+import React from 'react';
+
+// - 환경 변수 사용
+const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+```
+
+### 2. 조건부 사용 코드
+```typescript
+// ✅ DO: 조건부로 사용되는 코드는 유지
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+if (isDevelopment) {
+  console.log('Debug info');
+}
+
+// ✅ DO: 타입 가드 함수는 유지
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+```
+
+## 📊 정리 효과
+
+### 1. 번들 크기 감소
+- 사용하지 않는 코드 제거로 번들 크기 최적화
+- 트리 셰이킹 효과 향상
+
+### 2. 코드 가독성 향상
+- 불필요한 코드 제거로 핵심 로직에 집중
+- 유지보수성 향상
+
+### 3. 성능 향상
+- 불필요한 코드 실행 방지
+- 메모리 사용량 최적화
+
+## 🔄 정리 프로세스
+
+### 1. 자동 정리
+```bash
+# 1. ESLint 실행
+npm run lint
+
+# 2. TypeScript 컴파일 확인
+npx tsc --noEmit
+
+# 3. 사용하지 않는 의존성 확인
+npm audit
+```
+
+### 2. 수동 정리
+1. **파일별 검토**: 각 파일에서 사용하지 않는 코드 식별
+2. **의존성 검토**: import/export 관계 확인
+3. **테스트 실행**: 코드 제거 후 기능 정상 동작 확인
+4. **커밋**: 정리된 코드 커밋
+
+### 3. 정기적 정리
+- **주간**: 사용하지 않는 import 정리
+- **월간**: 사용하지 않는 함수/변수 정리
+- **분기**: 사용하지 않는 파일/의존성 정리
+
+이 규칙을 따르면 깔끔하고 유지보수하기 쉬운 코드베이스를 유지할 수 있습니다.

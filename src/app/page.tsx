@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useAuth } from '@/providers/auth-provider';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/providers/auth-provider';
+import Link from 'next/link';
+import { redirect, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function Home() {
   const { user, loading } = useAuth();
@@ -26,7 +26,7 @@ export default function Home() {
   }
 
   if (user) {
-    return null; // 리다이렉트 중
+    return redirect('/dashboard'); // 리다이렉트 중
   }
 
   return (

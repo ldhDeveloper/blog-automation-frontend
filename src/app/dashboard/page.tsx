@@ -1,11 +1,12 @@
 'use client';
 
-import { useAuth } from '@/providers/auth-provider';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/providers/auth-provider';
+import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { toast } from 'sonner';
-
 function DashboardContent() {
   const { user, signOut } = useAuth();
 
@@ -13,6 +14,7 @@ function DashboardContent() {
     try {
       await signOut();
       toast.success('로그아웃되었습니다');
+      redirect('/');
     } catch {
       toast.error('로그아웃 중 오류가 발생했습니다');
     }
@@ -65,9 +67,12 @@ function DashboardContent() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <Button className="w-full" disabled>
+                {/* <Button className="w-full" disabled>
                   곧 출시 예정
-                </Button>
+                </Button> */}
+                <Link href="/posts/create">
+                  <Button className="w-full">포스트 생성</Button>
+                </Link>
               </CardContent>
             </Card>
 

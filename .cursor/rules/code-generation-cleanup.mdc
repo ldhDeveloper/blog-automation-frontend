@@ -1,0 +1,300 @@
+---
+description: 코드 생성 시 사용하지 않는 코드 방지 규칙
+globs: src/**/*.{ts,tsx,js,jsx}
+alwaysApply: true
+---
+
+# 코드 생성 시 사용하지 않는 코드 방지 규칙
+
+## 🎯 코드 생성 원칙
+
+### 1. 필요한 것만 생성
+```typescript
+// ❌ DON'T: 사용하지 않을 가능성이 높은 코드 생성
+// 예: 모든 가능한 유틸리티 함수를 미리 생성
+export function unusedHelper1() { /* ... */ }
+export function unusedHelper2() { /* ... */ }
+export function unusedHelper3() { /* ... */ }
+
+// ✅ DO: 실제로 필요한 코드만 생성
+// 예: 요청된 기능에 직접적으로 필요한 코드만
+export function requiredFunction() { /* ... */ }
+```
+
+### 2. 점진적 개발
+```typescript
+// ❌ DON'T: 한 번에 모든 기능을 구현
+export class CompleteFeature {
+  // 20개의 메서드와 50개의 속성
+}
+
+// ✅ DO: 단계별로 필요한 기능만 구현
+export class BasicFeature {
+  // 현재 필요한 핵심 기능만
+}
+```
+
+## 📋 코드 생성 체크리스트
+
+### 1. 생성 전 확인사항
+- [ ] 요청된 기능이 명확한가?
+- [ ] 필요한 최소한의 코드만 생성하는가?
+- [ ] 기존 코드와 중복되지 않는가?
+- [ ] 실제로 사용될 코드인가?
+
+### 2. 생성 후 확인사항
+- [ ] 모든 생성된 코드가 사용되는가?
+- [ ] 불필요한 import가 없는가?
+- [ ] 사용하지 않는 변수/함수가 없는가?
+- [ ] 타입 오류가 없는가?
+
+## 🛠️ 코드 생성 패턴
+
+### 1. 최소한의 구현
+```typescript
+// ✅ DO: 요청된 기능에 필요한 최소한의 코드
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+function createUser(userData: Omit<User, 'id'>): User {
+  return {
+    id: generateId(),
+    ...userData,
+  };
+}
+
+// ❌ DON'T: 사용하지 않을 수 있는 추가 기능
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  // 사용하지 않을 수 있는 추가 필드들
+  lastLoginAt?: Date;
+  preferences?: UserPreferences;
+  metadata?: Record<string, unknown>;
+}
+```
+
+### 2. 점진적 확장
+```typescript
+// ✅ DO: 기본 기능부터 구현
+export function processData(data: string): string {
+  return data.trim();
+}
+
+// 필요할 때 확장
+export function processDataAdvanced(
+  data: string, 
+  options: ProcessingOptions
+): ProcessedData {
+  // 기본 기능 + 추가 기능
+  return {
+    result: data.trim(),
+    metadata: options.includeMetadata ? extractMetadata(data) : undefined,
+  };
+}
+```
+
+### 3. 재사용 가능한 구조
+```typescript
+// ✅ DO: 재사용 가능한 기본 구조
+export interface ApiResponse<T> {
+  ok: boolean;
+  data?: T;
+  error?: string;
+}
+
+export function createApiResponse<T>(
+  data: T | null, 
+  error: string | null = null
+): ApiResponse<T> {
+  return {
+    ok: error === null,
+    data: error === null ? data : undefined,
+    error: error || undefined,
+  };
+}
+
+// ❌ DON'T: 특정 용도에만 사용되는 복잡한 구조
+export interface SpecificApiResponse {
+  success: boolean;
+  userData?: UserData;
+  postData?: PostData;
+  channelData?: ChannelData;
+  // ... 많은 특정 타입들
+}
+```
+
+## 🔍 코드 검증 규칙
+
+### 1. 타입 안전성 검증
+```typescript
+// ✅ DO: 타입 오류 없는 코드 생성
+function processUser(user: User): ProcessedUser {
+  return {
+    id: user.id,
+    name: user.name.trim(),
+    email: user.email.toLowerCase(),
+  };
+}
+
+// ❌ DON'T: 타입 오류가 있는 코드 생성
+function processUser(user: any): any {
+  return {
+    id: user.id,
+    name: user.name.trim(), // user.name이 string이 아닐 수 있음
+    email: user.email.toLowerCase(), // user.email이 string이 아닐 수 있음
+  };
+}
+```
+
+### 2. 사용 여부 검증
+```typescript
+// ✅ DO: 생성된 모든 코드가 사용되는지 확인
+export function validateUser(user: User): boolean {
+  return user.id.length > 0 && user.email.includes('@');
+}
+
+// 사용 예시
+const isValid = validateUser(userData);
+
+// ❌ DON'T: 사용되지 않는 코드 생성
+export function unusedValidation(user: User): boolean {
+  // 복잡한 검증 로직이지만 실제로 사용되지 않음
+  return user.id.length > 0 && user.email.includes('@') && user.name.length > 2;
+}
+```
+
+### 3. 의존성 검증
+```typescript
+// ✅ DO: 필요한 의존성만 import
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui';
+
+// ❌ DON'T: 사용하지 않는 의존성 import
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { Button, Input, Select, Modal } from '@/components/ui';
+```
+
+## 📊 코드 품질 지표
+
+### 1. 사용률 지표
+- **생성된 함수 중 사용률**: 90% 이상
+- **생성된 타입 중 사용률**: 95% 이상
+- **생성된 컴포넌트 중 사용률**: 85% 이상
+
+### 2. 중복률 지표
+- **중복 함수**: 0%
+- **중복 타입**: 0%
+- **중복 컴포넌트**: 0%
+
+### 3. 오류율 지표
+- **타입 오류**: 0%
+- **런타임 오류**: 0%
+- **ESLint 오류**: 0%
+
+## 🔄 정리 프로세스
+
+### 1. 생성 시 정리
+```typescript
+// ✅ DO: 생성과 동시에 정리
+export function createUser(userData: CreateUserData): User {
+  // 필요한 로직만 포함
+  return {
+    id: generateId(),
+    ...userData,
+    createdAt: new Date(),
+  };
+}
+
+// ❌ DON'T: 나중에 정리할 예정으로 복잡하게 생성
+export function createUser(userData: CreateUserData): User {
+  // 많은 불필요한 로직들...
+  const id = generateId();
+  const now = new Date();
+  const user = {
+    id,
+    ...userData,
+    createdAt: now,
+    // 사용하지 않을 수 있는 추가 필드들...
+  };
+  return user;
+}
+```
+
+### 2. 생성 후 정리
+```bash
+# 1. ESLint 실행으로 사용하지 않는 코드 감지
+npm run lint
+
+# 2. TypeScript 컴파일로 타입 오류 확인
+npx tsc --noEmit
+
+# 3. 사용하지 않는 코드 제거
+# - 사용하지 않는 import 제거
+# - 사용하지 않는 변수 제거
+# - 사용하지 않는 함수 제거
+```
+
+## 🚫 금지사항
+
+### 1. 미리 생성 금지
+```typescript
+// ❌ DON'T: 사용하지 않을 수 있는 코드 미리 생성
+export function futureFeature1() { /* ... */ }
+export function futureFeature2() { /* ... */ }
+export function futureFeature3() { /* ... */ }
+```
+
+### 2. 과도한 추상화 금지
+```typescript
+// ❌ DON'T: 과도하게 추상화된 코드
+export abstract class BaseProcessor<T, R> {
+  abstract process(data: T): R;
+  abstract validate(data: T): boolean;
+  abstract transform(data: T): T;
+  abstract serialize(data: R): string;
+  abstract deserialize(data: string): R;
+}
+
+// ✅ DO: 필요한 만큼만 추상화
+export function processUserData(user: User): ProcessedUser {
+  return {
+    id: user.id,
+    name: user.name.trim(),
+    email: user.email.toLowerCase(),
+  };
+}
+```
+
+### 3. 복잡한 설정 금지
+```typescript
+// ❌ DON'T: 복잡한 설정 객체
+interface ComplexConfig {
+  api: {
+    baseUrl: string;
+    timeout: number;
+    retries: number;
+    headers: Record<string, string>;
+    auth: {
+      type: 'bearer' | 'basic' | 'api-key';
+      token?: string;
+      username?: string;
+      password?: string;
+      apiKey?: string;
+    };
+  };
+  // ... 많은 설정들
+}
+
+// ✅ DO: 필요한 설정만
+interface SimpleConfig {
+  apiUrl: string;
+  timeout: number;
+}
+```
+
+이 규칙을 따르면 효율적이고 깔끔한 코드를 생성할 수 있습니다.
