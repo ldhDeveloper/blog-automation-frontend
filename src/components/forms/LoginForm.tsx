@@ -37,7 +37,7 @@ export function LoginForm({ onSubmit, isLoading = false, error }: LoginFormProps
       setIsSubmitting(true);
       await onSubmit(data);
       reset(); // 성공 후 폼 초기화
-    } catch (error) {
+    } catch {
       // 에러는 상위 컴포넌트에서 처리
     } finally {
       setIsSubmitting(false);

@@ -15,7 +15,7 @@ import { Search } from 'lucide-react';
 import { useDebounce } from '@/hooks/use-debounce';
 
 const statusOptions = [
-  { value: '', label: '전체' },
+  { value: 'all', label: '전체' },
   { value: 'draft', label: '초안' },
   { value: 'generating', label: '생성 중' },
   { value: 'ready', label: '준비됨' },
@@ -63,7 +63,7 @@ export function PostsFilter() {
   }, [debouncedSearch, updateSearchParams]);
 
   const handleStatusChange = (value: string) => {
-    updateSearchParams('status', value);
+    updateSearchParams('status', value === 'all' ? '' : value);
   };
 
   const handleSortChange = (value: string) => {
@@ -95,7 +95,7 @@ export function PostsFilter() {
       <div className="space-y-2">
         <Label htmlFor="status-filter">상태</Label>
         <Select 
-          value={searchParams.get('status') || ''} 
+          value={searchParams.get('status') || 'all'} 
           onValueChange={handleStatusChange}
         >
           <SelectTrigger id="status-filter" className="w-full md:w-[180px]" aria-label="상태">

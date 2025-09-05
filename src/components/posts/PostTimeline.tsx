@@ -21,6 +21,11 @@ import {
 import { useSSE } from '@/hooks/use-sse';
 import { usePostTimeline } from '@/hooks/use-api';
 
+interface SSEMessage {
+  type: 'timeline_update' | 'step_status_change';
+  data: TimelineEvent;
+}
+
 interface TimelineEvent {
   id: string;
   type: 'ideate' | 'draft' | 'image' | 'seo' | 'publish';
@@ -82,19 +87,20 @@ export function PostTimeline({ postId }: PostTimelineProps) {
     isConnected, 
     error: sseError, 
     reconnect 
-  } = useSSE(`/api/posts/${postId}/stream`, {
+  } = useSSE<SSEMessage>(`/api/posts/${postId}/stream`, {
     enabled: !!postId,
     autoReconnect: true,
     onMessage: (data) => {
       // SSE 메시지 수신 시 타임라인 업데이트
-      if (data.type === 'timeline_update') {
+      if (data && typeof data === 'object' && 'type' in data && data.type === 'timeline_update') {
+        const message = data as SSEMessage;
         setTimeline(prev => {
           const updated = [...prev];
-          const index = updated.findIndex(item => item.id === data.data.id);
+          const index = updated.findIndex(item => item.id === message.data.id);
           if (index >= 0) {
-            updated[index] = { ...updated[index], ...data.data };
+            updated[index] = { ...updated[index], ...message.data };
           } else {
-            updated.push(data.data);
+            updated.push(message.data);
           }
           return updated.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
         });

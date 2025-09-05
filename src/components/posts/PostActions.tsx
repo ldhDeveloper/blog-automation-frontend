@@ -58,7 +58,7 @@ export function PostActions({ postId }: PostActionsProps) {
       await deletePost.mutateAsync(postId);
       toast.success('포스트가 삭제되었습니다');
       router.push('/posts');
-    } catch (error) {
+    } catch {
       toast.error('포스트 삭제에 실패했습니다');
     }
   };
@@ -67,7 +67,7 @@ export function PostActions({ postId }: PostActionsProps) {
     try {
       await retryPost.mutateAsync(postId);
       toast.success('포스트 재생성을 시작했습니다');
-    } catch (error) {
+    } catch {
       toast.error('재시도에 실패했습니다');
     }
   };
@@ -77,7 +77,7 @@ export function PostActions({ postId }: PostActionsProps) {
     try {
       await navigator.clipboard.writeText(post.content);
       toast.success('내용이 클립보드에 복사되었습니다');
-    } catch (error) {
+    } catch {
       toast.error('복사에 실패했습니다');
     }
   };
@@ -87,7 +87,7 @@ export function PostActions({ postId }: PostActionsProps) {
     try {
       await navigator.clipboard.writeText(url);
       toast.success('링크가 클립보드에 복사되었습니다');
-    } catch (error) {
+    } catch {
       toast.error('공유 링크 복사에 실패했습니다');
     }
   };

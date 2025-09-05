@@ -102,7 +102,7 @@ describe('API Client', () => {
     it('should have all required API methods', () => {
       // Given & When & Then
       expect(api.posts).toBeDefined();
-      expect(api.posts.list).toBeTypeOf('function');
+      expect(api.posts.getAll).toBeTypeOf('function');
       expect(api.posts.get).toBeTypeOf('function');
       expect(api.posts.create).toBeTypeOf('function');
       expect(api.posts.update).toBeTypeOf('function');
@@ -224,7 +224,7 @@ describe('API Client', () => {
       expect(api).toBeDefined();
       
       // 각 API 메서드들이 에러 처리를 위한 구조를 가지고 있는지 확인
-      expect(api.posts.list).toBeTypeOf('function');
+      expect(api.posts.getAll).toBeTypeOf('function');
       expect(api.channels.list).toBeTypeOf('function');
     });
 

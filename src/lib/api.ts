@@ -84,7 +84,10 @@ export const api = {
       handleApiResponse(apiClient.delete(`posts/${id}`)),
     
     retry: (id: string) =>
-      handleApiResponse(apiClient.post(`jobs/${id}/retry`)),
+      handleApiResponse(apiClient.post(`posts/${id}/retry`)),
+    
+    retryJob: (jobId: string) =>
+      handleApiResponse(apiClient.post(`jobs/${jobId}/retry`)),
   },
 
   // 채널 관련

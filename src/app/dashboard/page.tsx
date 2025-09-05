@@ -13,7 +13,7 @@ function DashboardContent() {
     try {
       await signOut();
       toast.success('로그아웃되었습니다');
-    } catch (error) {
+    } catch {
       toast.error('로그아웃 중 오류가 발생했습니다');
     }
   };

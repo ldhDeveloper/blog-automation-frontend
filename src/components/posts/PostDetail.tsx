@@ -6,7 +6,8 @@ import { Separator } from '@/components/ui/separator';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Clock, FileText, Target, Calendar, Tag } from 'lucide-react';
-import { usePost } from '@/hooks/use-api';
+import { usePost, usePostTimeline } from '@/hooks/use-api';
+import { PostErrorDisplay } from './PostErrorDisplay';
 
 interface PostDetailProps {
   postId: string;
@@ -22,7 +23,9 @@ const statusMap = {
 
 export function PostDetail({ postId }: PostDetailProps) {
   const { data: postResponse, isLoading, error } = usePost(postId);
+  const { data: timelineResponse } = usePostTimeline(postId);
   const post = postResponse?.data;
+  const timelineEvents = timelineResponse?.data || [];
 
   if (isLoading) {
     return (
@@ -78,6 +81,12 @@ export function PostDetail({ postId }: PostDetailProps) {
           <span>수정일: {formatDistanceToNow(new Date(post.updatedAt), { addSuffix: true, locale: ko })}</span>
         </div>
       </div>
+
+      {/* 실패 원인 표시 (실패한 포스트인 경우) */}
+      {post.status === 'failed' && (() => {
+        const failedEvent = timelineEvents.find(event => event.status === 'failed');
+        return failedEvent ? <PostErrorDisplay timelineEvent={failedEvent} /> : null;
+      })()}
 
       <Separator />
 

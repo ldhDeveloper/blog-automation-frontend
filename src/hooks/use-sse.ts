@@ -11,19 +11,18 @@ interface SSEOptions {
   eventHandlers?: Record<string, (event: Event) => void>;
 }
 
-interface SSEState {
+interface SSEState<T = unknown> {
   data: T | null;
   isConnected: boolean;
   error: Event | Error | null;
   reconnect: () => void;
 }
 
-export function useSSE(url: string, options: SSEOptions = {}): SSEState {
+export function useSSE<T = unknown>(url: string, options: SSEOptions = {}): SSEState<T> {
   const {
     enabled = true,
     autoReconnect = false,
     reconnectDelay = 1000,
-    headers = {},
     withCredentials = true,
     onMessage,
     onError,

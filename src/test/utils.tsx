@@ -46,7 +46,7 @@ const customRender = (
 ) => {
   return render(ui, {
     wrapper: ({ children }) => (
-      <TestProviders queryClient={queryClient}>{children}</TestProviders>
+      <TestProviders queryClient={queryClient ?? new QueryClient()}>{children}</TestProviders>
     ),
     ...options,
   });
