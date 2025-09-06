@@ -1,20 +1,21 @@
 'use client';
 
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { CreatePostForm } from '@/schemas';
 import {
-    Bell,
-    Calendar,
-    Globe,
-    Lock,
-    MessageCircle,
-    Plus,
-    Tag,
-    X
+  Bell,
+  Calendar,
+  Globe,
+  Lock,
+  MessageCircle,
+  Plus,
+  Tag,
+  X
 } from 'lucide-react';
 import { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
@@ -54,8 +55,8 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold text-gray-900">옵션 설정</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">옵션 설정</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           포스트의 공개 설정, 태그, 예약 발행 등을 설정해주세요
         </p>
       </div>
@@ -80,7 +81,7 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
                 <FormItem className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <FormLabel className="text-base">공개 포스트</FormLabel>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       모든 사용자가 볼 수 있는 공개 포스트
                     </p>
                   </div>
@@ -114,7 +115,7 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
                 placeholder="태그를 입력하세요"
                 value={newTag}
                 onChange={(e) => setNewTag(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyPress}
                 className="flex-1"
               />
               <Button
@@ -205,7 +206,7 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
                       <MessageCircle className="h-4 w-4" />
                       댓글 허용
                     </FormLabel>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       사용자가 댓글을 남길 수 있도록 허용
                     </p>
                   </div>
@@ -230,7 +231,7 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
                       <Bell className="h-4 w-4" />
                       팔로워 알림
                     </FormLabel>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
                       팔로워들에게 새 포스트 알림 전송
                     </p>
                   </div>
@@ -248,15 +249,15 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
       </div>
 
       {/* 설정 요약 */}
-      <Card className="bg-gray-50">
+      <Card className="bg-gray-50 dark:bg-gray-900">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-gray-700">
+          <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-100">
             설정 요약
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600">공개 설정:</span>
+            <span className="text-gray-600 dark:text-gray-400">공개 설정:</span>
             <Badge variant={isPublic ? "default" : "secondary"}>
               {isPublic ? "공개" : "비공개"}
             </Badge>
@@ -264,7 +265,7 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
           
           {tags.length > 0 && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">태그:</span>
+              <span className="text-gray-600 dark:text-gray-400">태그:</span>
               <div className="flex flex-wrap gap-1">
                 {tags.map((tag, index) => (
                   <Badge key={index} variant="outline" className="text-xs">
@@ -277,8 +278,8 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
           
           {scheduledAt && (
             <div className="flex items-center gap-2 text-sm">
-              <span className="text-gray-600">예약 발행:</span>
-              <span className="text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">예약 발행:</span>
+              <span className="text-gray-900 dark:text-gray-100">
                 {new Date(scheduledAt).toLocaleString('ko-KR')}
               </span>
             </div>

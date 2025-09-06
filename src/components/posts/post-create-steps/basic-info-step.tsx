@@ -21,8 +21,8 @@ export function PostBasicInfoStep({ form }: PostBasicInfoStepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold text-gray-900">기본 정보 입력</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">기본 정보 입력</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           포스트의 제목, 주제, 키워드를 입력해주세요
         </p>
       </div>
@@ -135,29 +135,29 @@ export function PostBasicInfoStep({ form }: PostBasicInfoStepProps) {
 
       {/* 입력된 정보 미리보기 */}
       {(title || topic || keywords) && (
-        <Card className="bg-gray-50">
+        <Card className="bg-gray-50 dark:bg-gray-900">
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-gray-700">
+            <CardTitle className="text-sm font-medium text-gray-700 dark:text-gray-100">
               입력 정보 미리보기
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {title && (
               <div>
-                <span className="text-xs font-medium text-gray-600">제목:</span>
-                <p className="text-sm text-gray-900">{title}</p>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">제목:</span>
+                <p className="text-sm text-gray-900 dark:text-gray-100">{title}</p>
               </div>
             )}
             {topic && (
               <div>
-                <span className="text-xs font-medium text-gray-600">주제:</span>
-                <p className="text-sm text-gray-900">{topic}</p>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">주제:</span>
+                <p className="text-sm text-gray-900 dark:text-gray-100">{topic}</p>
               </div>
             )}
             {keywords && (
               <div>
-                <span className="text-xs font-medium text-gray-600">키워드:</span>
-                <p className="text-sm text-gray-900">{keywords}</p>
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-400">키워드:</span>
+                <p className="text-sm text-gray-900 dark:text-gray-100">{keywords}</p>
               </div>
             )}
           </CardContent>

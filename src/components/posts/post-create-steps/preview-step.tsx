@@ -48,8 +48,8 @@ export function PostPreviewStep({ form }: PostPreviewStepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold text-gray-900">미리보기 및 확인</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">미리보기 및 확인</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           입력한 정보를 확인하고 포스트를 생성하세요
         </p>
       </div>
@@ -71,11 +71,11 @@ export function PostPreviewStep({ form }: PostPreviewStepProps) {
         <CardContent className="space-y-4">
           {/* 제목 */}
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
               {formData.title || '제목이 입력되지 않았습니다'}
             </h1>
             {formData.topic && (
-              <p className="text-lg text-gray-600 mb-2">
+              <p className="text-lg text-gray-600 dark:text-gray-400 mb-2">
                 주제: {formData.topic}
               </p>
             )}
@@ -107,7 +107,7 @@ export function PostPreviewStep({ form }: PostPreviewStepProps) {
           {formData.excerpt && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-700 mb-2">요약</h3>
-              <p className="text-gray-900">{formData.excerpt}</p>
+              <p className="text-gray-900 dark:text-gray-100">{formData.excerpt}</p>
             </div>
           )}
 
@@ -115,7 +115,7 @@ export function PostPreviewStep({ form }: PostPreviewStepProps) {
           {formData.content && (
             <div className="prose max-w-none">
               <h3 className="text-sm font-medium text-gray-700 mb-2">내용</h3>
-              <div className="text-gray-900 whitespace-pre-wrap">
+              <div className="text-gray-900 dark:text-gray-100 whitespace-pre-wrap">
                 {formData.content}
               </div>
             </div>

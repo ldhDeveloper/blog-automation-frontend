@@ -19,8 +19,8 @@ export function PostContentStep({ form }: PostContentStepProps) {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h3 className="text-lg font-semibold text-gray-900">내용 작성</h3>
-        <p className="text-sm text-gray-600">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">내용 작성</h3>
+        <p className="text-sm text-gray-600 dark:text-gray-400">
           포스트의 상세 내용과 요약을 작성해주세요 (선택사항)
         </p>
       </div>
@@ -100,13 +100,13 @@ export function PostContentStep({ form }: PostContentStepProps) {
       </div>
 
       {/* 작성 가이드 */}
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-200">
         <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium text-blue-900">
+          <CardTitle className="text-sm font-medium text-blue-900 dark:text-blue-100">
             작성 가이드
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-blue-800">
+        <CardContent className="space-y-2 text-sm text-blue-800 dark:text-blue-100">
           <div className="flex items-start gap-2">
             <div className="h-1.5 w-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
             <p>
@@ -139,8 +139,8 @@ export function PostContentStep({ form }: PostContentStepProps) {
           <CardContent className="space-y-4">
             {content && (
               <div>
-                <h4 className="text-sm font-medium text-gray-600 mb-2">포스트 내용:</h4>
-                <div className="text-sm text-gray-900 whitespace-pre-wrap bg-white p-3 rounded border">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">포스트 내용:</h4>
+                <div className="text-sm text-gray-900 dark:text-gray-100 whitespace-pre-wrap bg-white p-3 rounded border">
                   {content}
                 </div>
               </div>
@@ -148,8 +148,8 @@ export function PostContentStep({ form }: PostContentStepProps) {
             
             {excerpt && (
               <div>
-                <h4 className="text-sm font-medium text-gray-600 mb-2">포스트 요약:</h4>
-                <div className="text-sm text-gray-900 bg-white p-3 rounded border">
+                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">포스트 요약:</h4>
+                <div className="text-sm text-gray-900 dark:text-gray-100 bg-white p-3 rounded border">
                   {excerpt}
                 </div>
               </div>

@@ -4,11 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
+import { useLogger } from '@/hooks/use-logger';
 import { createPostSchema, type CreatePostForm } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 // 단계별 컴포넌트들
@@ -30,6 +31,8 @@ export function PostCreateForm() {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
+  const logger = useLogger('POST_CREATE_FORM');
 
   const form = useForm<CreatePostForm>({
     resolver: zodResolver(createPostSchema),
@@ -49,26 +52,105 @@ export function PostCreateForm() {
     mode: 'onChange',
   });
 
-  const { handleSubmit, trigger, formState: { isValid } } = form;
+  const { handleSubmit, trigger, formState: { isValid, errors }, watch } = form;
+  
+  // ref를 사용하여 최신 값들을 참조
+  const loggerRef = useRef(logger);
+  const currentStepRef = useRef(currentStep);
+  const watchRef = useRef(watch);
+  
+  // ref 값들을 최신으로 업데이트
+  loggerRef.current = logger;
+  currentStepRef.current = currentStep;
+  watchRef.current = watch;
+
+  // 유효성 검사 함수를 ref로 저장하여 안정화
+  const checkCurrentStepValidityRef = useRef<(() => Promise<void>) | null>(null);
+  
+  checkCurrentStepValidityRef.current = async () => {
+    const fieldsToValidate = getFieldsForStep(currentStepRef.current);
+    const isStepValid = await trigger(fieldsToValidate);
+    
+    loggerRef.current.debug('현재 단계 유효성 검사', {
+      step: currentStepRef.current,
+      fieldsToValidate,
+      isStepValid,
+      formValues: watchRef.current()
+    });
+    
+    setIsCurrentStepValid(isStepValid);
+  };
+
+  // 현재 단계가 변경될 때 유효성 검사
+  useEffect(() => {
+    checkCurrentStepValidityRef.current?.();
+  }, [currentStep]);
+
+  // 필드 변경 감시 (안전한 방법으로 재구현)
+  useEffect(() => {
+    console.log('🔍 watch 구독 시작');
+    let timeoutId: NodeJS.Timeout;
+    let lastProcessedValue: any = null;
+    
+    const subscription = watchRef.current((value, { name, type }) => {
+      // 값이 실제로 변경되었는지 확인
+      const currentValue = JSON.stringify(value);
+      if (currentValue === lastProcessedValue) {
+        console.log('⏸️ 값이 동일하므로 스킵:', { name, type });
+        return;
+      }
+      
+      console.log('👀 필드 변경 감지:', { name, type, value });
+      loggerRef.current.debug('필드 변경 감지', { name, type, value });
+      
+      // 디바운싱을 사용하여 연속된 호출 방지
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        lastProcessedValue = currentValue;
+        console.log('🔧 유효성 검사 실행 (디바운싱)');
+        checkCurrentStepValidityRef.current?.();
+      }, 200); // 200ms 디바운싱으로 증가
+    });
+    
+    return () => {
+      console.log('🔍 watch 구독 해제');
+      clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
+  }, []); // 빈 의존성 배열
 
   const nextStep = async () => {
     // 현재 단계의 필드들만 검증
     const fieldsToValidate = getFieldsForStep(currentStep);
     const isStepValid = await trigger(fieldsToValidate);
     
+    logger.userAction('다음 단계로 이동 시도', {
+      currentStep,
+      isStepValid,
+      fieldsToValidate
+    });
+    
     if (isStepValid && currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1);
+      logger.info('다음 단계로 이동 성공', { newStep: currentStep + 1 });
+    } else {
+      logger.warn('다음 단계로 이동 실패', { isStepValid, currentStep });
     }
   };
 
   const prevStep = () => {
     if (currentStep > 1) {
+      logger.userAction('이전 단계로 이동', { fromStep: currentStep, toStep: currentStep - 1 });
       setCurrentStep(currentStep - 1);
     }
   };
 
   const onSubmit = async (data: CreatePostForm) => {
+    logger.info('폼 제출 시작', { data });
     setIsSubmitting(true);
+    
+    const startTime = Date.now();
+    
     try {
       const response = await fetch('/api/posts', {
         method: 'POST',
@@ -76,15 +158,28 @@ export function PostCreateForm() {
         body: JSON.stringify(data),
       });
 
+      const duration = Date.now() - startTime;
+      logger.api('POST', '/api/posts', response.status, duration, { success: response.ok });
+
       if (!response.ok) {
         const error = await response.json();
+        logger.error('API 에러', { status: response.status, error, data });
         throw new Error(error.message || '포스트 생성에 실패했습니다');
       }
 
       const result = await response.json();
+      logger.info('포스트 생성 성공', { result, duration });
+      logger.userAction('포스트 생성 완료', { postId: result.data.id });
+      
       router.push(`/posts/${result.data.id}`);
     } catch (error) {
-      console.error('포스트 생성 오류:', error);
+      const duration = Date.now() - startTime;
+      logger.error('포스트 생성 오류', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        data,
+        duration
+      });
       // TODO: 에러 토스트 표시
     } finally {
       setIsSubmitting(false);
@@ -128,6 +223,43 @@ export function PostCreateForm() {
   return (
     <Form {...form}>
       <div className="space-y-6">
+        {/* 개발 환경 디버깅 패널 */}
+        {process.env.NODE_ENV === 'development' && (
+          <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">
+            <CardHeader>
+              <CardTitle className="text-sm text-yellow-800 dark:text-yellow-200">🐛 디버깅 정보</CardTitle>
+            </CardHeader>
+            <CardContent className="text-xs space-y-2">
+              <div className="text-foreground">
+                <strong>현재 단계:</strong> {currentStep} / {STEPS.length}
+              </div>
+              <div className="text-foreground">
+                <strong>현재 단계 유효성:</strong> 
+                <span className={isCurrentStepValid ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                  {isCurrentStepValid ? ' ✅ 유효' : ' ❌ 무효'}
+                </span>
+              </div>
+              <div className="text-foreground">
+                <strong>전체 폼 유효성:</strong> 
+                <span className={isValid ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                  {isValid ? ' ✅ 유효' : ' ❌ 무효'}
+                </span>
+              </div>
+              <div className="text-foreground">
+                <strong>에러:</strong>
+                <pre className="mt-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-2 rounded overflow-auto max-h-32">
+                  {JSON.stringify(errors, null, 2)}
+                </pre>
+              </div>
+              <div className="text-foreground">
+                <strong>폼 값:</strong>
+                <pre className="mt-1 text-xs bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200 p-2 rounded overflow-auto max-h-32">
+                  {JSON.stringify(watch(), null, 2)}
+                </pre>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* 진행 단계 표시 */}
         <div className="flex items-center justify-between">
         {STEPS.map((step, index) => (
@@ -149,7 +281,7 @@ export function PostCreateForm() {
                 )}
               </div>
               <div className="ml-3 hidden sm:block">
-                <p className="text-sm font-medium text-gray-900">{step.title}</p>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{step.title}</p>
                 <p className="text-xs text-gray-500">{step.description}</p>
               </div>
             </div>
@@ -201,7 +333,7 @@ export function PostCreateForm() {
                   <Button
                     type="button"
                     onClick={nextStep}
-                    disabled={!isValid}
+                    disabled={!isCurrentStepValid}
                     className="flex items-center gap-2"
                   >
                     다음
