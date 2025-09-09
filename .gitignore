@@ -55,3 +55,7 @@ dev-debug.log
 
 # Vitest
 .vitest/ 
+
+# 로그 파일
+logs/
+*.log

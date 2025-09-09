@@ -31,8 +31,8 @@ export function PostOptionsStep({ form }: PostOptionsStepProps) {
   const isPublic = watch('isPublic');
   const tags = watch('tags') || [];
   const scheduledAt = watch('scheduledAt');
-  const allowComments = watch('allowComments');
-  const notifyFollowers = watch('notifyFollowers');
+  // const allowComments = watch('allowComments');
+  // const notifyFollowers = watch('notifyFollowers');
 
   const addTag = () => {
     if (newTag.trim() && !tags.includes(newTag.trim())) {

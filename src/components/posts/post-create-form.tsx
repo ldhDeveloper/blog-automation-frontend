@@ -4,6 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
+import { useApiErrorHandler } from '@/contexts/error-context';
 import { useLogger } from '@/hooks/use-logger';
 import { createPostSchema, type CreatePostForm } from '@/schemas';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -33,6 +34,7 @@ export function PostCreateForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCurrentStepValid, setIsCurrentStepValid] = useState(false);
   const logger = useLogger('POST_CREATE_FORM');
+  const { handleApiError } = useApiErrorHandler();
 
   const form = useForm<CreatePostForm>({
     resolver: zodResolver(createPostSchema),
@@ -148,6 +150,7 @@ export function PostCreateForm() {
   const onSubmit = async (data: CreatePostForm) => {
     logger.info('폼 제출 시작', { data });
     setIsSubmitting(true);
+    // 이전 에러는 자동으로 클리어됨 (Toast 기반)
     
     const startTime = Date.now();
     
@@ -164,7 +167,21 @@ export function PostCreateForm() {
       if (!response.ok) {
         const error = await response.json();
         logger.error('API 에러', { status: response.status, error, data });
-        throw new Error(error.message || '포스트 생성에 실패했습니다');
+        
+        // API 에러 표시
+        handleApiError({
+          message: error.message || '포스트 생성에 실패했습니다',
+          status: response.status,
+          code: error.code,
+          details: error.details,
+        }, {
+          title: '포스트 생성 오류',
+          action: {
+            label: '다시 시도',
+            onClick: () => onSubmit(data),
+          },
+        });
+        return;
       }
 
       const result = await response.json();
@@ -180,7 +197,19 @@ export function PostCreateForm() {
         data,
         duration
       });
-      // TODO: 에러 토스트 표시
+      
+      // 네트워크 에러 등 기타 에러 표시
+      handleApiError({
+        message: error instanceof Error ? error.message : '네트워크 오류가 발생했습니다',
+        status: 0,
+        code: 'NETWORK_ERROR',
+      }, {
+        title: '네트워크 오류',
+        action: {
+          label: '다시 시도',
+          onClick: () => onSubmit(data),
+        },
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -223,6 +252,8 @@ export function PostCreateForm() {
   return (
     <Form {...form}>
       <div className="space-y-6">
+        {/* API 에러 표시 */}
+        
         {/* 개발 환경 디버깅 패널 */}
         {process.env.NODE_ENV === 'development' && (
           <Card className="border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-950/20">

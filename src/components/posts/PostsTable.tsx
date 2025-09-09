@@ -1,10 +1,13 @@
 'use client';
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import { usePosts } from '@/hooks/use-api';
-import { Button } from '@/components/ui/button';
-import type { Post } from '@/types/api';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import {
   Table,
   TableBody,
@@ -13,23 +16,22 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { 
-  ChevronLeft, 
-  ChevronRight, 
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
-  RotateCcw
-} from 'lucide-react';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { useQueryErrorHandler } from '@/contexts/error-context';
+import { usePosts } from '@/hooks/use-api';
+import type { Post } from '@/types/api';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  RotateCcw,
+  Trash2
+} from 'lucide-react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 
 const statusMap = {
   draft: { label: '초안', variant: 'secondary' as const },
@@ -42,6 +44,7 @@ const statusMap = {
 export function PostsTable() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { handleError } = useQueryErrorHandler();
   
   const currentPage = parseInt(searchParams.get('page') || '1');
   const limit = parseInt(searchParams.get('limit') || '10');
@@ -49,13 +52,20 @@ export function PostsTable() {
   const search = searchParams.get('search') || '';
   const sort = searchParams.get('sort') || 'createdAt';
 
-  const { data, isLoading, error, refetch } = usePosts({
+  const { data, isLoading, error } = usePosts({
     page: currentPage,
     limit,
     status,
     search,
     sort,
   });
+
+  // 에러 처리
+  useEffect(() => {
+    if (error) {
+      handleError(error);
+    }
+  }, [error, handleError]);
 
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -90,18 +100,6 @@ export function PostsTable() {
           data-testid="loading-spinner"
         />
         <span className="ml-2 text-muted-foreground">로딩 중...</span>
-      </div>
-    );
-  }
-
-  // 에러 상태
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 space-y-4">
-        <p className="text-destructive">{error.message || '포스트를 불러오는데 실패했습니다'}</p>
-        <Button onClick={() => refetch()} variant="outline">
-          다시 시도
-        </Button>
       </div>
     );
   }

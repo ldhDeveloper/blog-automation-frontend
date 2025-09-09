@@ -1,10 +1,13 @@
+import { Toaster } from "@/components/ui/sonner";
+import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { ErrorProvider } from '@/contexts/error-context';
+import { WorkspaceProvider } from '@/contexts/workspace-context';
+import { AuthProvider } from '@/providers/auth-provider';
+import { QueryProvider } from '@/providers/query-provider';
+import { ThemeProvider } from '@/providers/theme-provider';
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { ThemeProvider } from '@/providers/theme-provider';
-import { QueryProvider } from '@/providers/query-provider';
-import { AuthProvider } from '@/providers/auth-provider';
-import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,8 +37,18 @@ export default function RootLayout({
             <ThemeProvider>
       <AuthProvider>
         <QueryProvider>
-          {children}
-          <Toaster />
+          <ErrorProvider>
+            <WorkspaceProvider>
+              <div className="min-h-screen bg-background text-foreground">
+                {/* 테마 토글 버튼 */}
+                <div className="fixed top-4 right-4 z-50">
+                  <ThemeToggle />
+                </div>
+                {children}
+              </div>
+              <Toaster />
+            </WorkspaceProvider>
+          </ErrorProvider>
         </QueryProvider>
       </AuthProvider>
     </ThemeProvider>

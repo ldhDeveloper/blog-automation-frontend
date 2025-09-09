@@ -3,12 +3,18 @@
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CreateWorkspaceModal } from '@/components/workspace/create-workspace-modal';
+import { WorkspaceSwitcher } from '@/components/workspace/workspace-switcher';
+import { useWorkspace } from '@/contexts/workspace-context';
 import { useAuth } from '@/providers/auth-provider';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 function DashboardContent() {
   const { user, signOut } = useAuth();
+  const { isLoading: isLoadingWorkspace } = useWorkspace();
+  const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
   const handleSignOut = async () => {
     try {
@@ -25,10 +31,17 @@ function DashboardContent() {
       <header className="bg-white dark:bg-gray-800 shadow">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex items-center">
+            <div className="flex items-center space-x-4">
               <h1 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
                 블로그 자동화 대시보드
               </h1>
+              {!isLoadingWorkspace && (
+                <div className="w-64">
+                  <WorkspaceSwitcher 
+                    onCreateWorkspace={() => setShowCreateWorkspace(true)}
+                  />
+                </div>
+              )}
             </div>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -92,6 +105,14 @@ function DashboardContent() {
           </div>
         </div>
       </main>
+
+      <CreateWorkspaceModal
+        open={showCreateWorkspace}
+        onOpenChange={setShowCreateWorkspace}
+        onSuccess={() => {
+          toast.success('워크스페이스가 생성되었습니다');
+        }}
+      />
     </div>
   );
 }

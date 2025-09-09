@@ -79,37 +79,58 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* 더 밝은 배경색으로 변경 */
+  --background: oklch(0.12 0 0);
+  --foreground: oklch(0.95 0 0);
+  
+  /* 카드 배경을 더 밝게 */
+  --card: oklch(0.18 0 0);
+  --card-foreground: oklch(0.95 0 0);
+  
+  /* 팝오버도 동일하게 */
+  --popover: oklch(0.18 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  
+  /* 프라이머리 색상 개선 */
+  --primary: oklch(0.7 0.15 250);
+  --primary-foreground: oklch(0.98 0 0);
+  
+  /* 세컨더리 색상 개선 */
+  --secondary: oklch(0.25 0 0);
+  --secondary-foreground: oklch(0.9 0 0);
+  
+  /* 뮤트 색상 개선 */
+  --muted: oklch(0.25 0 0);
+  --muted-foreground: oklch(0.65 0 0);
+  
+  /* 액센트 색상 개선 */
+  --accent: oklch(0.25 0 0);
+  --accent-foreground: oklch(0.9 0 0);
+  
+  /* 파괴적 색상 개선 */
+  --destructive: oklch(0.7 0.2 15);
+  
+  /* 테두리와 입력 필드 개선 */
+  --border: oklch(0.3 0 0);
+  --input: oklch(0.25 0 0);
+  --ring: oklch(0.6 0.15 250);
+  
+  /* 차트 색상 개선 */
+  --chart-1: oklch(0.6 0.2 250);
+  --chart-2: oklch(0.7 0.15 180);
+  --chart-3: oklch(0.75 0.2 120);
+  --chart-4: oklch(0.8 0.2 60);
+  --chart-5: oklch(0.7 0.2 300);
+  
+  /* 사이드바 색상 개선 */
+  --sidebar: oklch(0.15 0 0);
+  --sidebar-foreground: oklch(0.9 0 0);
+  --sidebar-primary: oklch(0.6 0.15 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.22 0 0);
+  --sidebar-accent-foreground: oklch(0.9 0 0);
+  --sidebar-border: oklch(0.3 0 0);
+  --sidebar-ring: oklch(0.6 0.15 250);
 }
 
 @layer base {
@@ -118,5 +139,33 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* 다크모드에서 스크롤바 스타일링 */
+  .dark ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .dark ::-webkit-scrollbar-track {
+    @apply bg-gray-800;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    @apply bg-gray-600 rounded;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-500;
+  }
+  
+  /* 다크모드에서 선택 텍스트 스타일링 */
+  .dark ::selection {
+    @apply bg-blue-500/30 text-blue-100;
+  }
+  
+  /* 다크모드에서 포커스 링 개선 */
+  .dark *:focus-visible {
+    @apply ring-2 ring-blue-400/50;
   }
 }

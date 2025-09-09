@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { createPostSchema } from '@/schemas';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -9,8 +9,7 @@ export async function POST(request: NextRequest) {
     // Zod 스키마로 유효성 검사
     const validatedData = createPostSchema.parse(body);
     
-    // Supabase 클라이언트 생성
-    const supabase = createClient();
+    // Supabase 싱글톤 인스턴스 사용
     
     // 현재 사용자 정보 가져오기
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -113,7 +112,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10');
     const offset = (page - 1) * limit;
     
-    const supabase = createClient();
+    // Supabase 싱글톤 인스턴스 사용
     
     // 현재 사용자 정보 가져오기
     const { data: { user }, error: authError } = await supabase.auth.getUser();

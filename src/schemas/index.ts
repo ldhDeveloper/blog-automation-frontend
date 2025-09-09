@@ -22,6 +22,30 @@ export const workspaceSchema = z.object({
   updatedAt: z.string(),
 });
 
+// 워크스페이스 생성 스키마
+export const createWorkspaceSchema = z.object({
+  name: z.string().min(1, '워크스페이스 이름을 입력해주세요'),
+  slug: z.string().min(1, 'URL 슬러그를 입력해주세요'),
+  description: z.string().optional(),
+  settings: z.object({
+    allowMemberInvites: z.boolean(),
+    requireApprovalForPosts: z.boolean(),
+    defaultPostVisibility: z.enum(['public', 'members', 'private']),
+  }),
+});
+
+// 워크스페이스 생성 요청 타입
+export type CreateWorkspaceRequest = {
+  name: string;
+  slug: string;
+  description?: string;
+  settings: {
+    allowMemberInvites: boolean;
+    requireApprovalForPosts: boolean;
+    defaultPostVisibility: 'public' | 'members' | 'private';
+  };
+};
+
 // 포스트 관련 스키마
 export const postSchema = z.object({
   id: z.string(),

@@ -1,6 +1,7 @@
+import type { ApiError, ApiResponse } from '@/types/api';
 import ky, { HTTPError } from 'ky';
-import { createClient } from './supabase';
-import type { ApiResponse, ApiError } from '@/types/api';
+import { clientLogger } from './client-logger';
+import { supabase } from './supabase';
 
 // API 클라이언트 설정
 const apiClient = ky.create({
@@ -14,8 +15,7 @@ const apiClient = ky.create({
   hooks: {
     beforeRequest: [
       async (request) => {
-        // Supabase 세션에서 액세스 토큰 가져오기
-        const supabase = createClient();
+        // Supabase 세션에서 액세스 토큰 가져오기 (싱글톤 인스턴스 사용)
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.access_token) {
@@ -24,14 +24,37 @@ const apiClient = ky.create({
       },
     ],
     afterResponse: [
-      async (_request, _options, response) => {
+      async (request, _options, response) => {
+        // API 요청 로깅
+        const method = request.method;
+        const url = request.url;
+        const status = response.status;
+        
+        clientLogger.logApiRequest(method, url, status, 0, {
+          success: status >= 200 && status < 300
+        });
+        
         // 401 에러 시 인증 페이지로 리다이렉트
         if (response.status === 401) {
-          const supabase = createClient();
+          clientLogger.warn('인증 실패로 로그아웃', 'AUTH', { url, method });
+          // Supabase 싱글톤 인스턴스 사용
           await supabase.auth.signOut();
           window.location.href = '/auth/login';
         }
         return response;
+      },
+    ],
+    beforeError: [
+      (error) => {
+        // HTTP 에러 로깅
+        if (error instanceof HTTPError) {
+          clientLogger.error('HTTP 에러 발생', 'API_ERROR', {
+            status: error.response.status,
+            url: error.response.url,
+            message: error.message
+          });
+        }
+        return error;
       },
     ],
   },
@@ -54,6 +77,9 @@ async function handleApiResponse<T>(request: Promise<Response>): Promise<ApiResp
     throw error;
   }
 }
+
+// API 클라이언트 export
+export { apiClient };
 
 // API 메서드들
 export const api = {

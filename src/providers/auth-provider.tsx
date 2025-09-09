@@ -1,8 +1,8 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { Session, User, AuthError } from '@supabase/supabase-js';
-import { createClient } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
+import { AuthError, Session, User } from '@supabase/supabase-js';
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react';
 
 // 타입 정의
 interface AuthContextType {
@@ -27,7 +27,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const supabase = createClient();
+  // Supabase 싱글톤 인스턴스 사용
 
   useEffect(() => {
     // 초기 세션 확인
