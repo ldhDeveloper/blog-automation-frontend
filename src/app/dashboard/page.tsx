@@ -1,18 +1,16 @@
 'use client';
 
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { CreateWorkspaceModal } from '@/components/workspace/create-workspace-modal';
 import { WorkspaceSwitcher } from '@/components/workspace/workspace-switcher';
 import { useWorkspace } from '@/contexts/workspace-context';
-import { useAuth } from '@/providers/auth-provider';
+import { useCookieAuth } from '@/providers/cookie-auth-provider';
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 function DashboardContent() {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useCookieAuth();
   const { isLoading: isLoadingWorkspace } = useWorkspace();
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
 
@@ -20,7 +18,6 @@ function DashboardContent() {
     try {
       await signOut();
       toast.success('로그아웃되었습니다');
-      redirect('/');
     } catch {
       toast.error('로그아웃 중 오류가 발생했습니다');
     }
@@ -118,9 +115,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <ProtectedRoute>
-      <DashboardContent />
-    </ProtectedRoute>
-  );
+  return <DashboardContent />;
 }

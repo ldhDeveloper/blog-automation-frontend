@@ -3,9 +3,9 @@ import ky, { HTTPError } from 'ky';
 import { clientLogger } from './client-logger';
 import { supabase } from './supabase';
 
-// API 클라이언트 설정
+// API 클라이언트 설정 (프록시 사용)
 const apiClient = ky.create({
-  prefixUrl: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api',
+  prefixUrl: '/api/proxy',
   timeout: 30000,
   retry: {
     limit: 2,
@@ -15,12 +15,8 @@ const apiClient = ky.create({
   hooks: {
     beforeRequest: [
       async (request) => {
-        // Supabase 세션에서 액세스 토큰 가져오기 (싱글톤 인스턴스 사용)
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session?.access_token) {
-          request.headers.set('Authorization', `Bearer ${session.access_token}`);
-        }
+        // 쿠키는 자동으로 포함되므로 별도 처리 불필요
+        // 프록시에서 쿠키를 읽어 Authorization 헤더로 변환
       },
     ],
     afterResponse: [

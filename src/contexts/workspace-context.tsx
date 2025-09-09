@@ -172,6 +172,9 @@ export function useWorkspaceRole() {
   };
 }
 
+// 워크스페이스 역할 타입
+export type WorkspaceRole = 'owner' | 'admin' | 'member';
+
 // 워크스페이스 액션 타입
 export type WorkspaceAction = 
   | 'manage_workspace'

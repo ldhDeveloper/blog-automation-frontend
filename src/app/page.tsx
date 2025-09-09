@@ -2,30 +2,22 @@
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuth } from '@/providers/auth-provider';
+import { useCookieAuth } from '@/providers/cookie-auth-provider';
 import Link from 'next/link';
 import { redirect, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 export default function Home() {
-  const { user, loading } = useAuth();
+  const { user, session } = useCookieAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && user) {
+    if (session && user) {
       router.replace('/dashboard');
     }
-  }, [user, loading, router]);
+  }, [user, session, router]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 dark:border-gray-100"></div>
-      </div>
-    );
-  }
-
-  if (user) {
+  if (session && user) {
     return redirect('/dashboard'); // 리다이렉트 중
   }
 
