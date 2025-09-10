@@ -1,65 +1,49 @@
 /**
  * OAuth 콜백 처리 API 라우트
- * PKCE 기반 OAuth 플로우의 콜백을 처리하고 쿠키에 세션 저장
+ * Supabase 공식 문서에 따른 PKCE 기반 OAuth 콜백 처리
  */
 
-import { setAuthCookies } from '@/lib/auth/cookie-session';
-import { handleOAuthCallback } from '@/lib/auth/supabase-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/utils/supabase/server';
+import { NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
-    const state = searchParams.get('state');
-    const error = searchParams.get('error');
-    const errorDescription = searchParams.get('error_description');
-
-    // OAuth 에러 처리
-    if (error) {
-      console.error('OAuth error:', error, errorDescription);
-      return NextResponse.redirect(
-        new URL(`/auth/login?error=${encodeURIComponent(errorDescription || error)}`, request.url)
-      );
-    }
-
-    // 필수 파라미터 검증
-    if (!code || !state) {
-      console.error('Missing required parameters:', { code: !!code, state: !!state });
-      return NextResponse.redirect(
-        new URL('/auth/login?error=missing_parameters', request.url)
-      );
-    }
-
-    // 콜백 URL 생성 (현재 도메인)
-    const redirectTo = new URL('/dashboard', request.url).toString();
-
-    // OAuth 콜백 처리
-    const { session, error: authError } = await handleOAuthCallback(code, state);
-
-    if (authError || !session) {
-      console.error('OAuth callback failed:', authError);
-      return NextResponse.redirect(
-        new URL(`/auth/login?error=${encodeURIComponent(authError?.message || 'authentication_failed')}`, request.url)
-      );
-    }
-
-    // 성공 응답 생성
-    const response = NextResponse.redirect(new URL('/dashboard', request.url));
-
-    // 쿠키에 세션 저장
-    setAuthCookies(
-      response,
-      session.access_token,
-      session.refresh_token,
-      session.user?.id
-    );
-
-    return response;
-  } catch (error) {
-    console.error('OAuth callback error:', error);
-    return NextResponse.redirect(
-      new URL('/auth/login?error=server_error', request.url)
-    );
+export async function GET(request: Request) {
+  const { searchParams, origin } = new URL(request.url);
+  const code = searchParams.get('code');
+  console.log('code !!!', code);
+  
+  // "next" 파라미터가 있으면 리다이렉트 URL로 사용, 없으면 기본값 '/'
+  let next = searchParams.get('next') ?? '/';
+  if (next.startsWith('/')) {
+    next = '/dashboard';
   }
+
+  if (code) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+
+    console.log('exchangeCodeForSession result:', { data, error });
+    
+    if (error) {
+      console.error('OAuth callback error:', error);
+      return NextResponse.redirect(`${origin}/auth/login?error=${encodeURIComponent(error.message)}`);
+    }
+    
+    if (data.session) {
+      // 성공 시 대시보드로 리다이렉트
+      const forwardedHost = request.headers.get('x-forwarded-host');
+      const isLocalEnv = process.env.NODE_ENV === 'development';
+      
+      console.log('redirecting to', `${origin}${next}`);
+      if (isLocalEnv) {
+        return NextResponse.redirect(`${origin}${next}`);
+      } else if (forwardedHost) {
+        return NextResponse.redirect(`https://${forwardedHost}${next}`);
+      } else {
+        return NextResponse.redirect(`${origin}${next}`);
+      }
+    }
+  }
+
+  // 에러 발생 시 에러 페이지로 리다이렉트
+  return NextResponse.redirect(`${origin}/auth/login?error=auth_code_error`);
 }

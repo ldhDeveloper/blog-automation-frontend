@@ -4,30 +4,36 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { createSupabaseOAuthURL } from '@/lib/auth/pkce';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 
-export default function LoginPage() {
+function LoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const router = useRouter();
-  const searchParams = useSearchParams();
 
-  // URL 파라미터에서 에러 메시지 확인
+  // URL 파라미터에서 에러 메시지 확인 (클라이언트 사이드)
   useEffect(() => {
-    const errorParam = searchParams.get('error');
+    const urlParams = new URLSearchParams(window.location.search);
+    const errorParam = urlParams.get('error');
     if (errorParam) {
       setError(decodeURIComponent(errorParam));
     }
-  }, [searchParams]);
+  }, []);
 
-  const handleOAuthLogin = (provider: 'google' | 'github' | 'discord') => {
+  const handleOAuthLogin = async (provider: 'google' | 'github' | 'discord') => {
+    console.log('로그인 시도', provider);
     setIsLoading(true);
     setError(null);
 
     try {
       const redirectTo = `${window.location.origin}/api/auth/callback`;
-      const oauthUrl = createSupabaseOAuthURL(provider, redirectTo);
+      console.log('콜백 URL:', redirectTo);
+      console.log('현재 origin:', window.location.origin);
+      
+      // createSupabaseOAuthURL 사용
+      const oauthUrl = await createSupabaseOAuthURL(provider, redirectTo);
+      console.log('생성된 OAuth URL:', oauthUrl);
+      
+      // OAuth URL로 리다이렉트
       window.location.href = oauthUrl;
     } catch (err) {
       console.error('OAuth login error:', err);
@@ -141,5 +147,13 @@ export default function LoginPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

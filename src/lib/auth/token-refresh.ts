@@ -3,7 +3,7 @@
  * 백그라운드에서 자동으로 토큰 갱신 처리
  */
 
-import { isTokenExpired, getTokenExpiration } from './cookie-session';
+import { getTokenExpiration } from './cookie-session';
 
 // 토큰 갱신 설정
 const REFRESH_CONFIG = {

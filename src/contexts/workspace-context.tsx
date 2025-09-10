@@ -1,6 +1,7 @@
 'use client';
 
 import { fetchCurrentWorkspace, switchWorkspace } from '@/lib/api/workspace';
+import { useCookieAuth } from '@/providers/cookie-auth-provider';
 import type { Workspace } from '@/types/workspace';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { createContext, useContext, useState } from 'react';
@@ -11,11 +12,36 @@ interface WorkspaceContextType {
   error: Error | null;
   switchToWorkspace: (workspaceId: string) => Promise<void>;
   refreshWorkspace: () => void;
+  hasRole: (role: WorkspaceRole, memberId?: string) => boolean;
+  canPerformAction: (action: WorkspaceAction, memberId?: string) => boolean;
+  getCurrentUserRole: () => WorkspaceRole | null;
 }
 
 const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
+  console.log('WorkspaceProvider');
+  const { user, isAuthenticated } = useCookieAuth();
+  
+  // 인증되지 않은 경우 workspace 관련 기능 비활성화
+  if (!isAuthenticated || !user) {
+    return (
+      <WorkspaceContext.Provider value={{
+        currentWorkspace: null,
+        isLoading: false,
+        error: null,
+        refreshWorkspace: () => {},
+        switchToWorkspace: async () => {},
+        hasRole: () => false,
+        canPerformAction: () => false,
+        getCurrentUserRole: () => null,
+      }}>
+        {children}
+      </WorkspaceContext.Provider>
+    );
+  }
+
+  // 인증된 사용자만 workspace 조회
   const queryClient = useQueryClient();
   const [isSwitching, setIsSwitching] = useState(false);
 
@@ -29,6 +55,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     queryFn: fetchCurrentWorkspace,
     staleTime: 5 * 60 * 1000, // 5분
     retry: 1,
+    enabled: isAuthenticated && !!user, // 이중 체크
   });
 
   const switchMutation = useMutation({
@@ -61,12 +88,60 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // 현재 사용자의 역할 확인 (실제 구현에서는 사용자 ID를 가져와야 함)
+  const getCurrentUserRole = (): WorkspaceRole | null => {
+    if (!currentWorkspace) return null;
+    // TODO: 실제 사용자 ID를 가져와서 역할 확인
+    // 현재는 임시로 owner로 설정
+    return 'owner' as WorkspaceRole;
+  };
+
+  const hasRole = (_role: WorkspaceRole, memberId?: string): boolean => {
+    if (!currentWorkspace) return false;
+    
+    // 소유자는 모든 권한을 가짐
+    if (currentWorkspace.ownerId === memberId) return true;
+    
+    // TODO: 실제 멤버 역할을 확인하는 로직 구현
+    // 현재는 임시로 false 반환
+    return false;
+  };
+
+  const canPerformAction = (action: WorkspaceAction, _memberId?: string): boolean => {
+    if (!currentWorkspace) return false;
+    
+    const userRole = getCurrentUserRole();
+    if (!userRole) return false;
+
+    // 소유자는 모든 액션 가능
+    if (userRole === 'owner') return true;
+
+    // 역할별 권한 체크
+    switch (action) {
+      case 'manage_workspace':
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin';
+      case 'invite_members':
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin';
+      case 'manage_posts':
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin' || (userRole as string) === 'member';
+      case 'view_members':
+        return true;
+      case 'delete_workspace':
+        return (userRole as string) === 'owner';
+      default:
+        return false;
+    }
+  };
+
   const value: WorkspaceContextType = {
     currentWorkspace: currentWorkspace || null,
     isLoading: isLoading || isSwitching,
     error: error as Error | null,
     switchToWorkspace,
     refreshWorkspace,
+    hasRole,
+    canPerformAction,
+    getCurrentUserRole,
   };
 
   return (
@@ -125,10 +200,10 @@ export function useWorkspaceRole() {
     if (!currentWorkspace) return null;
     // TODO: 실제 사용자 ID를 가져와서 역할 확인
     // 현재는 임시로 owner로 설정
-    return 'owner';
+    return 'owner' as WorkspaceRole;
   };
 
-  const hasRole = (role: WorkspaceRole, memberId?: string): boolean => {
+  const hasRole = (_role: WorkspaceRole, memberId?: string): boolean => {
     if (!currentWorkspace) return false;
     
     // 소유자는 모든 권한을 가짐
@@ -139,7 +214,7 @@ export function useWorkspaceRole() {
     return false;
   };
 
-  const canPerformAction = (action: WorkspaceAction, memberId?: string): boolean => {
+  const canPerformAction = (action: WorkspaceAction, _memberId?: string): boolean => {
     if (!currentWorkspace) return false;
     
     const userRole = getCurrentUserRole();
@@ -151,15 +226,15 @@ export function useWorkspaceRole() {
     // 역할별 권한 체크
     switch (action) {
       case 'manage_workspace':
-        return userRole === 'owner' || userRole === 'admin';
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin';
       case 'invite_members':
-        return userRole === 'owner' || userRole === 'admin';
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin';
       case 'manage_posts':
-        return userRole === 'owner' || userRole === 'admin' || userRole === 'member';
+        return (userRole as string) === 'owner' || (userRole as string) === 'admin' || (userRole as string) === 'member';
       case 'view_members':
         return true;
       case 'delete_workspace':
-        return userRole === 'owner';
+        return (userRole as string) === 'owner';
       default:
         return false;
     }

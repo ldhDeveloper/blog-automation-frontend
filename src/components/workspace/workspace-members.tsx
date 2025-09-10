@@ -24,7 +24,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useQueryErrorHandler } from '@/contexts/error-context';
-import { useWorkspace, useWorkspaceRole } from '@/contexts/workspace-context';
+// import { useWorkspaceRole } from '@/contexts/workspace-context';
 import { fetchWorkspaceMembers, removeWorkspaceMember, updateWorkspaceMemberRole } from '@/lib/api/workspace';
 import type { WorkspaceRole } from '@/types/workspace';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -41,8 +41,8 @@ export function WorkspaceMembers({ workspaceId }: WorkspaceMembersProps) {
   const [editingMember, setEditingMember] = useState<string | null>(null);
   const [showInviteModal, setShowInviteModal] = useState(false);
   const { handleError } = useQueryErrorHandler();
-  const { currentWorkspace } = useWorkspace();
-  const { canPerformAction } = useWorkspaceRole();
+  // const { currentWorkspace } = useWorkspace();
+  // const { canPerformAction } = useWorkspaceRole();
   const queryClient = useQueryClient();
 
   const { data: members = [], isLoading, error } = useQuery({
@@ -57,7 +57,7 @@ export function WorkspaceMembers({ workspaceId }: WorkspaceMembersProps) {
       queryClient.invalidateQueries({ queryKey: ['workspaceMembers', workspaceId] });
       setEditingMember(null);
     },
-    onError: handleError,
+    onError: (error) => handleError(error),
   });
 
   const removeMemberMutation = useMutation({
@@ -65,7 +65,7 @@ export function WorkspaceMembers({ workspaceId }: WorkspaceMembersProps) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaceMembers', workspaceId] });
     },
-    onError: handleError,
+    onError: (error) => handleError(error),
   });
 
   // 에러 처리

@@ -1,11 +1,11 @@
 import { apiClient } from '@/lib/api';
 import type {
-    CreateWorkspaceRequest,
-    InviteMemberRequest,
-    UpdateMemberRoleRequest,
-    UpdateWorkspaceRequest,
-    Workspace,
-    WorkspaceMember,
+  CreateWorkspaceRequest,
+  InviteMemberRequest,
+  UpdateMemberRoleRequest,
+  UpdateWorkspaceRequest,
+  Workspace,
+  WorkspaceMember,
 } from '@/types/workspace';
 
 export const workspaceApi = {
@@ -21,10 +21,7 @@ export const workspaceApi = {
       const response = await apiClient.get('workspaces/current').json<{ data: Workspace }>();
       return response.data;
     } catch (error: any) {
-      if (error.response?.status === 404) {
-        return null;
-      }
-      throw error;
+      return null;
     }
   },
 

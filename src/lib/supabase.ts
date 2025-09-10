@@ -22,6 +22,8 @@ export function createClient(): SupabaseClient {
       storageKey: 'supabase.auth.token',
       // 동일한 storage 사용
       storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+      // PKCE 플로우 활성화
+      flowType: 'pkce',
     },
   })
 

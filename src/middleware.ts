@@ -3,8 +3,8 @@
  * 보호된 라우트에 대한 인증 검사 및 리다이렉트 처리
  */
 
-import { NextRequest, NextResponse } from 'next/server';
 import { verifySessionFromCookies } from '@/lib/auth/supabase-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // 보호된 라우트 패턴
 const protectedRoutes = [

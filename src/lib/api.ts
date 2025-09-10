@@ -1,7 +1,7 @@
 import type { ApiError, ApiResponse } from '@/types/api';
 import ky, { HTTPError } from 'ky';
+import { createSupabaseServerClient } from './auth/supabase-auth';
 import { clientLogger } from './client-logger';
-import { supabase } from './supabase';
 
 // API 클라이언트 설정 (프록시 사용)
 const apiClient = ky.create({
@@ -14,9 +14,10 @@ const apiClient = ky.create({
   },
   hooks: {
     beforeRequest: [
-      async (request) => {
-        // 쿠키는 자동으로 포함되므로 별도 처리 불필요
-        // 프록시에서 쿠키를 읽어 Authorization 헤더로 변환
+      async (_request) => {
+        // 프록시에서 쿠키를 읽어 Authorization 헤더로 자동 변환
+        // 클라이언트에서는 별도 처리 불필요
+        // 쿠키는 자동으로 포함되어 프록시로 전달됨
       },
     ],
     afterResponse: [
@@ -33,8 +34,12 @@ const apiClient = ky.create({
         // 401 에러 시 인증 페이지로 리다이렉트
         if (response.status === 401) {
           clientLogger.warn('인증 실패로 로그아웃', 'AUTH', { url, method });
-          // Supabase 싱글톤 인스턴스 사용
-          await supabase.auth.signOut();
+          // 로그아웃 API 호출
+          try {
+            await fetch('/api/auth/logout', { method: 'POST' });
+          } catch (error) {
+            console.error('Logout failed:', error);
+          }
           window.location.href = '/auth/login';
         }
         return response;
@@ -72,6 +77,53 @@ async function handleApiResponse<T>(request: Promise<Response>): Promise<ApiResp
     
     throw error;
   }
+}
+
+// JWT 토큰 검증 및 사용자 정보 추출 (서버 사이드 전용)
+export async function validateJWTToken(accessToken: string) {
+  try {
+    const supabase = createSupabaseServerClient();
+    const { data: { user }, error } = await supabase.auth.getUser(accessToken);
+    
+    if (error || !user) {
+      throw new Error('Invalid token');
+    }
+    
+    return {
+      user,
+      isValid: true,
+    };
+  } catch (error) {
+    console.error('JWT validation failed:', error);
+    return {
+      user: null,
+      isValid: false,
+      error: error instanceof Error ? error.message : 'Token validation failed',
+    };
+  }
+}
+
+// 서버 사이드에서 쿠키 읽기 (서버 컴포넌트에서 사용)
+export async function getServerAuthFromCookies() {
+  const { getAuthFromCookiesServer } = await import('./auth/server-cookie-session');
+  return getAuthFromCookiesServer();
+}
+
+// 서버 사이드 API 클라이언트 (JWT 직접 전달)
+export function createServerApiClient(accessToken: string) {
+  return ky.create({
+    prefixUrl: process.env.BACKEND_API_URL || 'http://localhost:3001',
+    timeout: 30000,
+    retry: {
+      limit: 2,
+      methods: ['get', 'put', 'delete'],
+      statusCodes: [408, 413, 429, 500, 502, 503, 504],
+    },
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+    },
+  });
 }
 
 // API 클라이언트 export

@@ -3,9 +3,9 @@
  * 세션 무효화 및 쿠키 삭제
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { clearAuthCookies, getAuthFromCookies } from '@/lib/auth/server-cookie-session';
 import { signOut } from '@/lib/auth/supabase-auth';
-import { getAuthFromCookies, clearAuthCookies } from '@/lib/auth/cookie-session';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

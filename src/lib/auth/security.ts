@@ -197,7 +197,7 @@ const rateLimitCache = new RateLimitCache(60000, 100); // 1분에 100회
 export function checkRateLimit(
   identifier: string,
   windowMs: number = 60000,
-  maxRequests: number = 100
+  _maxRequests: number = 100
 ): boolean {
   const key = `${identifier}:${Math.floor(Date.now() / windowMs)}`;
   return rateLimitCache.isAllowed(key);
@@ -213,7 +213,7 @@ export function getClientIP(request: NextRequest): string {
   if (realIP) return realIP;
   if (forwarded) return forwarded.split(',')[0].trim();
   
-  return request.ip || 'unknown';
+  return 'unknown';
 }
 
 // User Agent 검증

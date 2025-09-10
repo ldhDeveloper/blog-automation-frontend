@@ -3,10 +3,10 @@
  * RSC(React Server Components)에서 쿠키 기반 세션 읽기
  */
 
+import { Session, User } from '@supabase/supabase-js';
 import { headers } from 'next/headers';
-import { getAuthFromCookiesServer, isValidToken, isTokenExpired } from './cookie-session';
+import { getAuthFromCookiesServer, isTokenExpired, isValidToken } from './server-cookie-session';
 import { createSupabaseServerClient } from './supabase-auth';
-import { User, Session } from '@supabase/supabase-js';
 
 export interface ServerSession {
   user: User | null;
@@ -101,14 +101,14 @@ export async function getServerSession(): Promise<ServerSession> {
 /**
  * 미들웨어에서 설정한 사용자 정보 가져오기
  */
-export function getServerUserFromHeaders(): {
+export async function getServerUserFromHeaders(): Promise<{
   userId: string | null;
   userEmail: string | null;
   userName: string | null;
   accessToken: string | null;
-} {
+}> {
   try {
-    const headersList = headers();
+    const headersList = await headers();
     
     return {
       userId: headersList.get('x-user-id'),

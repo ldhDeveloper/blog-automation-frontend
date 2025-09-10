@@ -3,9 +3,9 @@
  * 리프레시 토큰을 사용하여 액세스 토큰 갱신
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { clearAuthCookies, getAuthFromCookies, setAuthCookies } from '@/lib/auth/server-cookie-session';
 import { refreshTokens } from '@/lib/auth/supabase-auth';
-import { getAuthFromCookies, setAuthCookies, clearAuthCookies } from '@/lib/auth/cookie-session';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {

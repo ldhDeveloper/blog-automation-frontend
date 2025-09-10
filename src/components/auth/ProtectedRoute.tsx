@@ -1,8 +1,8 @@
 'use client';
 
-import { ReactNode, useEffect } from 'react';
+import { useCookieAuth } from '@/providers/cookie-auth-provider';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/providers/auth-provider';
+import { ReactNode, useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,7 +10,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, fallback }: ProtectedRouteProps) {
-  const { user, loading } = useAuth();
+  const { user, loading } = useCookieAuth();
   const router = useRouter();
 
   useEffect(() => {

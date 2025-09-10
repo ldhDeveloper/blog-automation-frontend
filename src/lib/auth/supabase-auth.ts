@@ -3,14 +3,13 @@
  * PKCE 기반 OAuth 플로우와 쿠키 기반 세션 관리
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { AuthError, Session, User } from '@supabase/supabase-js';
-import { 
+import { AuthError, createClient, Session, User } from '@supabase/supabase-js';
+// validateAndClearPKCEState는 더 이상 사용하지 않음 (서버 사이드에서 쿠키로 처리)
+import {
   getAuthFromCookies,
-  isValidToken,
-  isTokenExpired 
-} from './cookie-session';
-import { validateAndClearPKCEState } from './pkce';
+  isTokenExpired,
+  isValidToken
+} from './server-cookie-session';
 
 // Supabase 클라이언트 생성 (서버 사이드용)
 export function createSupabaseServerClient() {
@@ -45,12 +44,26 @@ export function createSupabaseClientClient() {
  */
 export async function handleOAuthCallback(
   code: string,
-  state: string
+  state: string,
+  request?: Request
 ): Promise<{ session: Session | null; error: AuthError | null }> {
   const supabase = createSupabaseServerClient();
   
-  // PKCE 상태 검증
-  const codeVerifier = validateAndClearPKCEState(state);
+  // 서버 사이드에서 쿠키로 PKCE 상태 검증
+  let codeVerifier: string | null = null;
+  
+  if (request) {
+    const cookies = request.headers.get('cookie');
+    if (cookies) {
+      const stateCookie = getCookieValue(cookies, 'pkce_state');
+      const verifierCookie = getCookieValue(cookies, 'pkce_verifier');
+      
+      if (stateCookie === state && verifierCookie) {
+        codeVerifier = verifierCookie;
+      }
+    }
+  }
+  
   if (!codeVerifier) {
     return {
       session: null,
@@ -73,6 +86,12 @@ export async function handleOAuthCallback(
       error: { message: 'OAuth callback failed', status: 500 } as AuthError,
     };
   }
+}
+
+// 쿠키에서 값 추출
+function getCookieValue(cookies: string, name: string): string | null {
+  const match = cookies.match(new RegExp('(^| )' + name + '=([^;]+)'));
+  return match ? match[2] : null;
 }
 
 /**
